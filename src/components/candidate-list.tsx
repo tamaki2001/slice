@@ -58,10 +58,6 @@ export function CandidateList({
               <span className="font-sans text-xs tracking-widest text-stone-500 block mt-0.5">
                 {c.author}
               </span>
-              {/* デバッグ: coverUrl */}
-              <span className="font-mono text-[9px] text-stone-300 block mt-1 break-all">
-                {c.coverUrl || "(no cover)"}
-              </span>
 
               {/* 既存書籍のインジケーター */}
               {c.existingBook && (
