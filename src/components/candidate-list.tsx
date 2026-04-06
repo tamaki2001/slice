@@ -44,16 +44,13 @@ export function CandidateList({
             }
             className="w-full text-left py-6 flex items-start gap-4"
           >
-            {c.coverUrl ? (
-              <img
-                src={c.coverUrl}
-                alt=""
-                className="w-10 h-14 object-contain flex-shrink-0"
-                onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-              />
-            ) : (
-              <div className="w-10 h-14 bg-stone-200 flex-shrink-0" />
-            )}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={c.coverUrl || ""}
+              alt=""
+              className="w-12 h-16 object-contain flex-shrink-0 bg-stone-100"
+              referrerPolicy="no-referrer"
+            />
             <div className="flex-1 min-w-0">
               <h3 className="font-sans text-base font-medium text-stone-800">
                 {c.title}
