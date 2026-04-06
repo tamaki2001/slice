@@ -37,6 +37,21 @@ export function ReflectionPage({
     []
   );
 
+  const handleDelete = useCallback((sliceId: string) => {
+    setSlices((prev) => {
+      const target = prev.find((s) => s.id === sliceId);
+      if (!target) return prev;
+
+      if (target.type === "quote") {
+        // 引用を削除→紐づく内省もカスケード削除
+        return prev.filter((s) => s.id !== sliceId && s.quoteId !== sliceId);
+      }
+      return prev.filter((s) => s.id !== sliceId);
+    });
+
+    // TODO: Supabase削除（DBはON DELETE CASCADEで自動カスケード）
+  }, []);
+
   const handleReplyToQuote = useCallback((quoteId: string) => {
     setActiveQuoteId(quoteId);
   }, []);
@@ -50,7 +65,11 @@ export function ReflectionPage({
       <BookMiniHeader book={book} onInfoTap={() => setDetailOpen(true)} />
 
       <main className="flex-1 overflow-y-auto">
-        <SliceThread slices={slices} onReplyToQuote={handleReplyToQuote} />
+        <SliceThread
+          slices={slices}
+          onReplyToQuote={handleReplyToQuote}
+          onDelete={handleDelete}
+        />
         <div ref={bottomRef} />
       </main>
 

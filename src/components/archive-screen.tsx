@@ -1,5 +1,6 @@
 "use client";
 
+import { Camera } from "lucide-react";
 import { TimelineEntry } from "./timeline-entry";
 
 const entries = [
@@ -23,18 +24,16 @@ const entries = [
   },
 ];
 
-// 時間差（時間単位）から余白pxを対数スケールで算出
 const hoursAgo = [1, 2, 168];
 function gapPx(i: number): number {
   if (i === 0) return 0;
   const diff = hoursAgo[i] - hoursAgo[i - 1];
-  // 密: 1h差→24px, 疎: 166h差→210px
   return Math.round(Math.log2(diff + 1) * 28);
 }
 
 export function ArchiveScreen() {
   return (
-    <div className="h-full overflow-y-auto bg-background">
+    <div className="h-full overflow-y-auto bg-background relative">
       <div className="pt-14 pb-32">
         {entries.map((entry, i) => (
           <div key={entry.id} style={{ marginTop: i > 0 ? gapPx(i) : 0 }}>
@@ -45,6 +44,23 @@ export function ArchiveScreen() {
           </div>
         ))}
       </div>
+
+      {/* FAB: 将来の書影撮影トリガー */}
+      <button
+        type="button"
+        aria-label="書影を撮影して記録を追加"
+        className="
+          fixed right-6 bottom-8
+          size-12 rounded-full
+          bg-stone-800 text-stone-100
+          active:bg-stone-700
+          flex items-center justify-center
+          shadow-sm
+          pb-[env(safe-area-inset-bottom,0px)]
+        "
+      >
+        <Camera size={20} strokeWidth={1.5} />
+      </button>
     </div>
   );
 }

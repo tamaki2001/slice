@@ -1,17 +1,40 @@
+"use client";
+
+import { useState } from "react";
+import { Trash2 } from "lucide-react";
 import type { Slice } from "@/lib/types";
+import { DeleteSliceDialog } from "./delete-slice-dialog";
+
+function DeleteButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label="削除"
+      className="opacity-0 group-hover:opacity-100 focus:opacity-100 text-stone-300 hover:text-stone-500 active:text-stone-500 transition-opacity"
+    >
+      <Trash2 size={13} strokeWidth={1.5} />
+    </button>
+  );
+}
 
 function QuoteBlock({
   slice,
   onAddReflection,
+  onDelete,
 }: {
   slice: Slice;
   onAddReflection: () => void;
+  onDelete: () => void;
 }) {
   return (
-    <div className="border-l-2 border-stone-200 pl-6">
-      <p className="font-serif text-stone-600 text-sm leading-relaxed italic">
-        {slice.body}
-      </p>
+    <div className="group border-l-2 border-stone-200 pl-6">
+      <div className="flex items-start justify-between gap-2">
+        <p className="font-serif text-stone-600 text-sm leading-relaxed italic flex-1">
+          {slice.body}
+        </p>
+        <DeleteButton onClick={onDelete} />
+      </div>
       <div className="flex items-center justify-between mt-2">
         {slice.reference ? (
           <span className="font-sans text-stone-400 text-xs tracking-widest">
@@ -32,12 +55,21 @@ function QuoteBlock({
   );
 }
 
-function NestedReflectionBlock({ slice }: { slice: Slice }) {
+function NestedReflectionBlock({
+  slice,
+  onDelete,
+}: {
+  slice: Slice;
+  onDelete: () => void;
+}) {
   return (
-    <div className="pl-8">
-      <p className="font-serif text-stone-800 text-sm leading-loose">
-        {slice.body}
-      </p>
+    <div className="group pl-8">
+      <div className="flex items-start justify-between gap-2">
+        <p className="font-serif text-stone-800 text-sm leading-loose flex-1">
+          {slice.body}
+        </p>
+        <DeleteButton onClick={onDelete} />
+      </div>
       <span className="font-sans text-stone-400 text-xs tracking-widest mt-2 block text-right">
         {formatTime(slice.createdAt)}
       </span>
@@ -45,12 +77,21 @@ function NestedReflectionBlock({ slice }: { slice: Slice }) {
   );
 }
 
-function StandaloneReflectionBlock({ slice }: { slice: Slice }) {
+function StandaloneReflectionBlock({
+  slice,
+  onDelete,
+}: {
+  slice: Slice;
+  onDelete: () => void;
+}) {
   return (
-    <div>
-      <p className="font-serif text-stone-800 text-sm leading-loose">
-        {slice.body}
-      </p>
+    <div className="group">
+      <div className="flex items-start justify-between gap-2">
+        <p className="font-serif text-stone-800 text-sm leading-loose flex-1">
+          {slice.body}
+        </p>
+        <DeleteButton onClick={onDelete} />
+      </div>
       <span className="font-sans text-stone-400 text-xs tracking-widest mt-2 block text-right">
         {formatTime(slice.createdAt)}
       </span>
@@ -108,32 +149,86 @@ function buildThreads(slices: Slice[]): ThreadItem[] {
 export function SliceThread({
   slices,
   onReplyToQuote,
+  onDelete,
 }: {
   slices: Slice[];
   onReplyToQuote?: (quoteId: string) => void;
+  onDelete?: (sliceId: string) => void;
 }) {
   const threads = buildThreads(slices);
 
+  const [deleteTarget, setDeleteTarget] = useState<{
+    id: string;
+    isQuote: boolean;
+    childCount: number;
+  } | null>(null);
+
+  const handleConfirmDelete = () => {
+    if (deleteTarget) {
+      onDelete?.(deleteTarget.id);
+      setDeleteTarget(null);
+    }
+  };
+
   return (
-    <div className="px-8 py-6 space-y-12">
-      {threads.map((item) => {
-        if (item.kind === "quote-thread") {
+    <>
+      <div className="px-8 py-6 space-y-12">
+        {threads.map((item) => {
+          if (item.kind === "quote-thread") {
+            return (
+              <div key={item.quote.id} className="space-y-6">
+                <QuoteBlock
+                  slice={item.quote}
+                  onAddReflection={() => onReplyToQuote?.(item.quote.id)}
+                  onDelete={() =>
+                    setDeleteTarget({
+                      id: item.quote.id,
+                      isQuote: true,
+                      childCount: item.reflections.length,
+                    })
+                  }
+                />
+                {item.reflections.map((r) => (
+                  <NestedReflectionBlock
+                    key={r.id}
+                    slice={r}
+                    onDelete={() =>
+                      setDeleteTarget({
+                        id: r.id,
+                        isQuote: false,
+                        childCount: 0,
+                      })
+                    }
+                  />
+                ))}
+              </div>
+            );
+          }
           return (
-            <div key={item.quote.id} className="space-y-6">
-              <QuoteBlock
-                slice={item.quote}
-                onAddReflection={() => onReplyToQuote?.(item.quote.id)}
-              />
-              {item.reflections.map((r) => (
-                <NestedReflectionBlock key={r.id} slice={r} />
-              ))}
-            </div>
+            <StandaloneReflectionBlock
+              key={item.slice.id}
+              slice={item.slice}
+              onDelete={() =>
+                setDeleteTarget({
+                  id: item.slice.id,
+                  isQuote: false,
+                  childCount: 0,
+                })
+              }
+            />
           );
-        }
-        return (
-          <StandaloneReflectionBlock key={item.slice.id} slice={item.slice} />
-        );
-      })}
-    </div>
+        })}
+      </div>
+
+      <DeleteSliceDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+        isQuote={deleteTarget?.isQuote ?? false}
+        childCount={deleteTarget?.childCount ?? 0}
+        onConfirm={handleConfirmDelete}
+      />
+    </>
   );
 }
