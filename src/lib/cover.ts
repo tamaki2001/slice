@@ -1,11 +1,15 @@
 /**
  * ISBNと各APIのサムネイルURLから最適な書影URLを決定する。
- * HEADリクエストは行わず、URLの優先順位で即座に返す。
+ *
+ * 優先順位:
+ * 1. Google Books 埋め込みURL（ISBNベース、ほぼ全書籍で200を返す）
+ * 2. Google Books APIサムネイル（http→https変換）
+ * 3. OpenBD直リンク（日本書籍、ただし404が多い）
  */
 export function getBookCover(isbn?: string, googleThumbnail?: string): string {
-  // 1. OpenBD直リンク（日本の本に強い、ISBNさえあれば確実）
+  // 1. Google Books埋め込みURL（ISBNがあれば最も確実）
   if (isbn && /^\d{13}$/.test(isbn)) {
-    return `https://cover.openbd.jp/${isbn}.jpg`;
+    return `https://books.google.com/books/content?vid=ISBN${isbn}&printsec=frontcover&img=1&zoom=1`;
   }
 
   // 2. Google Booksサムネイル（http→https変換）
@@ -13,6 +17,5 @@ export function getBookCover(isbn?: string, googleThumbnail?: string): string {
     return googleThumbnail.replace("http://", "https://");
   }
 
-  // 3. フォールバック
   return "";
 }
