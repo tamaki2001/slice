@@ -55,7 +55,7 @@ export function CandidateList({
               <div className="w-10 h-14 bg-stone-200 flex-shrink-0" />
             )}
             <div className="flex-1 min-w-0">
-              <h3 className="font-sans text-base font-medium text-stone-800 truncate">
+              <h3 className="font-sans text-base font-medium text-stone-800">
                 {c.title}
               </h3>
               <span className="font-sans text-xs tracking-widest text-stone-500 block mt-0.5">
