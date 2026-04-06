@@ -6,7 +6,6 @@ import { ArrowLeft } from "lucide-react";
 import { searchGoogleBooks, searchGoogleBooksByISBN } from "@/lib/google-books";
 import { searchOpenBD } from "@/lib/openbd";
 import { searchNDL, searchNDLByISBN } from "@/lib/ndl";
-import { fetchCoverUrl } from "@/lib/cover";
 import { createBook } from "@/lib/db";
 import { captureFrameAsBase64 } from "@/lib/ocr";
 import { startBarcodeScanner } from "@/lib/barcode";
@@ -75,22 +74,6 @@ export function CaptureHub() {
     streamRef.current = null;
     setCameraReady(false);
   }, []);
-
-  // ── 書影補完 ──
-  const enrichCovers = useCallback(
-    async (results: BookCandidate[], isbn?: string): Promise<BookCandidate[]> => {
-      if (!isbn || results.every((r) => r.coverUrl)) return results;
-
-      log("書影を検索中...");
-      const cover = await fetchCoverUrl(isbn);
-      if (cover) {
-        log(`書影取得: ${cover.slice(0, 60)}...`);
-        return results.map((r) => (r.coverUrl ? r : { ...r, coverUrl: cover }));
-      }
-      return results;
-    },
-    [log]
-  );
 
   // ── ISBN → 書籍検索（OpenBD優先） ──
   const searchByISBN = useCallback(
@@ -168,9 +151,8 @@ export function CaptureHub() {
       setStepLabel(STEPS[0]);
 
       try {
-        let results = await searchByISBN(isbn);
+        const results = await searchByISBN(isbn);
         if (results.length > 0) {
-          results = await enrichCovers(results, isbn);
           showResults(results);
           return;
         }

@@ -18,6 +18,7 @@ export type BookCandidate = {
   googleBooksId: string;
   title: string;
   author: string;
+  isbn?: string;
   coverUrl?: string;
   /** DB内の既存bookと一致した場合 */
   existingBook?: BookWithPreview;

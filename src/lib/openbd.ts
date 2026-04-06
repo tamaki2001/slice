@@ -1,4 +1,5 @@
 import type { BookCandidate } from "./types";
+import { getBookCover } from "./cover";
 
 type OpenBDResponse = {
   summary?: {
@@ -21,13 +22,12 @@ export async function searchOpenBD(isbn: string): Promise<BookCandidate | null> 
 
     const s = book.summary;
 
-    const coverUrl = s.cover?.replace("http://", "https://") || undefined;
-
     return {
       googleBooksId: `openbd-${isbn}`,
       title: s.title!,
       author: s.author ?? "",
-      coverUrl,
+      isbn,
+      coverUrl: getBookCover(isbn, s.cover?.replace("http://", "https://")) || undefined,
     };
   } catch {
     return null;

@@ -1,5 +1,6 @@
 import type { BookCandidate, BookWithPreview } from "./types";
 import { searchBooksByTitle } from "./db";
+import { getBookCover } from "./cover";
 
 type GoogleBooksItem = {
   id: string;
@@ -7,6 +8,7 @@ type GoogleBooksItem = {
     title?: string;
     authors?: string[];
     imageLinks?: { thumbnail?: string };
+    industryIdentifiers?: { type: string; identifier: string }[];
   };
 };
 
@@ -70,6 +72,10 @@ async function buildCandidates(
       const v = item.volumeInfo;
       const title = v.title ?? "";
       const author = v.authors?.join(", ") ?? "";
+      const isbn13 = v.industryIdentifiers?.find(
+        (i) => i.type === "ISBN_13"
+      )?.identifier;
+      const thumbnail = v.imageLinks?.thumbnail;
 
       const existing = existingBooks.find(
         (b) =>
@@ -82,7 +88,8 @@ async function buildCandidates(
         googleBooksId: item.id,
         title,
         author,
-        coverUrl: v.imageLinks?.thumbnail?.replace("http://", "https://"),
+        isbn: isbn13,
+        coverUrl: getBookCover(isbn13, thumbnail) || undefined,
         existingBook: existing,
       };
     });
