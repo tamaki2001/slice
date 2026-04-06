@@ -1,5 +1,5 @@
-import { CaptureScreen } from "@/components/capture-screen";
+import { AppShell } from "@/components/app-shell";
 
 export default function Home() {
-  return <CaptureScreen />;
+  return <AppShell />;
 }
