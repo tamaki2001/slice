@@ -2,6 +2,8 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import type { Book, Slice } from "@/lib/types";
+import { insertSlice, updateSliceBody, deleteSlice } from "@/lib/db";
+import { useRealtimeSlices } from "@/lib/use-realtime-slices";
 import { BookMiniHeader } from "./book-mini-header";
 import { SliceThread } from "./slice-thread";
 import { SliceComposer } from "./slice-composer";
@@ -18,33 +20,67 @@ export function ReflectionPage({
   const [slices, setSlices] = useState(initialSlices);
   const [activeQuoteId, setActiveQuoteId] = useState<string | undefined>();
   const [composerOpen, setComposerOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  // initialSlicesが変わったら同期（ページ遷移時）
+  useEffect(() => {
+    setSlices(initialSlices);
+  }, [initialSlices]);
+
+  // Realtime購読
+  useRealtimeSlices(book.id, setSlices);
+
+  // エラー自動消去
+  useEffect(() => {
+    if (!error) return;
+    const t = setTimeout(() => setError(null), 4000);
+    return () => clearTimeout(t);
+  }, [error]);
+
   const handleSubmit = useCallback(
-    (data: Omit<Slice, "id" | "createdAt">) => {
-      const newSlice: Slice = {
+    async (data: Omit<Slice, "id" | "createdAt">) => {
+      // 楽観的アップデート用の仮ID
+      const tempId = crypto.randomUUID();
+      const tempSlice: Slice = {
         ...data,
-        id: crypto.randomUUID(),
+        id: tempId,
         createdAt: new Date().toISOString(),
       };
-      setSlices((prev) => [...prev, newSlice]);
+      setSlices((prev) => [...prev, tempSlice]);
 
       if (data.type === "quote") {
-        setActiveQuoteId(newSlice.id);
+        setActiveQuoteId(tempId);
       }
 
-      // TODO: Supabase永続化
+      try {
+        const saved = await insertSlice(data);
+        // 仮IDを実IDに差し替え
+        setSlices((prev) =>
+          prev.map((s) => (s.id === tempId ? saved : s))
+        );
+        // 引用の場合、activeQuoteIdも実IDに更新
+        if (data.type === "quote") {
+          setActiveQuoteId(saved.id);
+        }
+      } catch (e) {
+        // ロールバック
+        setSlices((prev) => prev.filter((s) => s.id !== tempId));
+        setError(e instanceof Error ? e.message : "保存に失敗しました");
+      }
     },
     []
   );
 
-  const handleDelete = useCallback((sliceId: string) => {
+  const handleDelete = useCallback(async (sliceId: string) => {
+    // 楽観的アップデート: 状態を保持してロールバック可能に
+    let snapshot: Slice[] = [];
     setSlices((prev) => {
+      snapshot = prev;
       const target = prev.find((s) => s.id === sliceId);
       if (!target) return prev;
 
       if (target.type === "quote") {
-        // ON DELETE SET NULL: 引用を削除、紐づく内省はquoteIdをnullに
         return prev
           .filter((s) => s.id !== sliceId)
           .map((s) =>
@@ -54,15 +90,27 @@ export function ReflectionPage({
       return prev.filter((s) => s.id !== sliceId);
     });
 
-    // TODO: Supabase削除（DBはON DELETE SET NULLで自動処理）
+    try {
+      await deleteSlice(sliceId);
+    } catch (e) {
+      setSlices(snapshot);
+      setError(e instanceof Error ? e.message : "削除に失敗しました");
+    }
   }, []);
 
-  const handleEdit = useCallback((sliceId: string, body: string) => {
-    setSlices((prev) =>
-      prev.map((s) => (s.id === sliceId ? { ...s, body } : s))
-    );
+  const handleEdit = useCallback(async (sliceId: string, body: string) => {
+    let snapshot: Slice[] = [];
+    setSlices((prev) => {
+      snapshot = prev;
+      return prev.map((s) => (s.id === sliceId ? { ...s, body } : s));
+    });
 
-    // TODO: Supabase更新
+    try {
+      await updateSliceBody(sliceId, body);
+    } catch (e) {
+      setSlices(snapshot);
+      setError(e instanceof Error ? e.message : "更新に失敗しました");
+    }
   }, []);
 
   const handleReplyToQuote = useCallback((quoteId: string) => {
@@ -77,6 +125,13 @@ export function ReflectionPage({
   return (
     <div className="h-full bg-background flex flex-col">
       <BookMiniHeader book={book} onInfoTap={() => setDetailOpen(true)} />
+
+      {/* エラー通知 */}
+      {error && (
+        <div className="mx-6 mt-2 px-4 py-2 bg-stone-200 text-stone-600 font-sans text-xs tracking-wider rounded">
+          {error}
+        </div>
+      )}
 
       <main className="flex-1 overflow-y-auto">
         <SliceThread

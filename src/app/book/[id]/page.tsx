@@ -1,5 +1,9 @@
 import { ReflectionPage } from "@/components/reflection-page";
+import { fetchBook, fetchSlices } from "@/lib/db";
 import { mockBook, mockSlices } from "@/lib/mock-data";
+import { notFound } from "next/navigation";
+
+export const dynamic = "force-dynamic";
 
 export default async function BookDetailPage({
   params,
@@ -8,8 +12,16 @@ export default async function BookDetailPage({
 }) {
   const { id } = await params;
 
-  // TODO: idからSupabaseで取得。現在はモックデータ。
-  void id;
+  const book = await fetchBook(id);
 
-  return <ReflectionPage book={mockBook} slices={mockSlices} />;
+  if (!book) {
+    // DB未接続またはデータ未投入時はモックにフォールバック
+    if (id === "1" || id === "mock") {
+      return <ReflectionPage book={mockBook} slices={mockSlices} />;
+    }
+    notFound();
+  }
+
+  const slices = await fetchSlices(book.id);
+  return <ReflectionPage book={book} slices={slices} />;
 }
