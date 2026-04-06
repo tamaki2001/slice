@@ -199,19 +199,26 @@ export function CaptureHub() {
           }
         }
 
-        // タイトル/著者で検索
-        const query = [title, author].filter(Boolean).join(" ");
-        if (query.length > 1) {
-          log(`タイトル検索: "${query}"`);
-          setStepLabel(STEPS[2]);
-          const results = await searchGoogleBooks(query);
+        // タイトル/著者で段階的に検索
+        setStepLabel(STEPS[2]);
+        const queries = [
+          [title, author].filter(Boolean).join(" "),
+          title,
+          // タイトルが長い場合、前半だけで検索
+          title && title.length > 10 ? title.slice(0, Math.ceil(title.length / 2)) : "",
+          author,
+        ].filter((q) => q.length > 1);
+
+        for (const q of queries) {
+          log(`検索試行: "${q}"`);
+          const results = await searchGoogleBooks(q);
           if (results.length > 0) {
-            log(`タイトル検索ヒット: ${results.length}件`);
+            log(`ヒット: ${results.length}件`);
             showResults(results);
             return;
           }
-          log("タイトル検索: 該当なし");
         }
+        log("全検索パターン: 該当なし");
       } else {
         const err = await res.text();
         log(`Gemini APIエラー: ${err}`);
