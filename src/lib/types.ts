@@ -9,6 +9,20 @@ export type Book = {
   tags: string[];
 };
 
+export type BookWithPreview = Book & {
+  sliceCount: number;
+  latestSlice?: { body: string; createdAt: string };
+};
+
+export type BookCandidate = {
+  googleBooksId: string;
+  title: string;
+  author: string;
+  coverUrl?: string;
+  /** DB内の既存bookと一致した場合 */
+  existingBook?: BookWithPreview;
+};
+
 export type Slice = {
   id: string;
   bookId: string;

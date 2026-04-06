@@ -1,5 +1,5 @@
 import { supabase } from "./supabase";
-import type { Book, Slice } from "./types";
+import type { Book, BookWithPreview, Slice } from "./types";
 
 // ── 型変換 ──
 
@@ -38,6 +38,98 @@ export async function fetchBook(id: string): Promise<Book | null> {
     .single();
 
   if (error || !data) return null;
+  return toBook(data);
+}
+
+export async function fetchBooksWithPreview(): Promise<BookWithPreview[]> {
+  // 全書籍を取得
+  const { data: books, error: bErr } = await supabase
+    .from("sl_books")
+    .select("*");
+
+  if (bErr || !books) return [];
+
+  // 全スライスを取得（最新順）
+  const { data: slices } = await supabase
+    .from("sl_slices")
+    .select("book_id, body, created_at, type")
+    .order("created_at", { ascending: false });
+
+  const sliceList = slices ?? [];
+
+  return books
+    .map((row) => {
+      const book = toBook(row);
+      const bookSlices = sliceList.filter(
+        (s) => (s as Record<string, unknown>).book_id === book.id
+      );
+      const latest = bookSlices[0] as Record<string, unknown> | undefined;
+      return {
+        ...book,
+        sliceCount: bookSlices.length,
+        latestSlice: latest
+          ? { body: latest.body as string, createdAt: latest.created_at as string }
+          : undefined,
+      };
+    })
+    .sort((a, b) => {
+      const aTime = a.latestSlice ? new Date(a.latestSlice.createdAt).getTime() : 0;
+      const bTime = b.latestSlice ? new Date(b.latestSlice.createdAt).getTime() : 0;
+      return bTime - aTime;
+    });
+}
+
+export async function searchBooksByTitle(query: string): Promise<BookWithPreview[]> {
+  const { data: books } = await supabase
+    .from("sl_books")
+    .select("*")
+    .ilike("title", `%${query}%`);
+
+  if (!books || books.length === 0) return [];
+
+  const ids = books.map((b) => (b as Record<string, unknown>).id as string);
+  const { data: slices } = await supabase
+    .from("sl_slices")
+    .select("book_id, body, created_at")
+    .in("book_id", ids)
+    .order("created_at", { ascending: false });
+
+  const sliceList = slices ?? [];
+
+  return books.map((row) => {
+    const book = toBook(row);
+    const bookSlices = sliceList.filter(
+      (s) => (s as Record<string, unknown>).book_id === book.id
+    );
+    const latest = bookSlices[0] as Record<string, unknown> | undefined;
+    return {
+      ...book,
+      sliceCount: bookSlices.length,
+      latestSlice: latest
+        ? { body: latest.body as string, createdAt: latest.created_at as string }
+        : undefined,
+    };
+  });
+}
+
+export async function createBook(
+  book: Omit<Book, "id">
+): Promise<Book> {
+  const { data, error } = await supabase
+    .from("sl_books")
+    .insert({
+      title: book.title,
+      subtitle: book.subtitle ?? null,
+      author: book.author,
+      translator: book.translator ?? null,
+      cover_url: book.coverUrl || null,
+      synopsis: book.synopsis ?? null,
+      tags: book.tags,
+    })
+    .select()
+    .single();
+
+  if (error || !data) throw new Error(error?.message ?? "書籍の登録に失敗しました");
   return toBook(data);
 }
 
