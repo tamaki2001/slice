@@ -12,10 +12,8 @@ export type Book = {
 export type Slice = {
   id: string;
   bookId: string;
-  type: "quote" | "reflection" | "feedback";
+  type: "quote" | "reflection";
   body: string;
-  /** feedback時のペルソナ名 */
-  persona?: string;
   /** 引用時のページ番号等 */
   reference?: string;
   createdAt: string;

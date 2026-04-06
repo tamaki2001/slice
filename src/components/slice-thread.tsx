@@ -30,21 +30,6 @@ function ReflectionBlock({ slice }: { slice: Slice }) {
   );
 }
 
-function FeedbackBlock({ slice }: { slice: Slice }) {
-  return (
-    <div className="px-8 py-6 bg-stone-100/50">
-      {slice.persona && (
-        <span className="font-sans text-stone-400 text-xs tracking-widest block mb-3">
-          {slice.persona}
-        </span>
-      )}
-      <p className="font-serif text-stone-600 text-sm leading-loose">
-        {slice.body}
-      </p>
-    </div>
-  );
-}
-
 function formatTime(iso: string): string {
   const d = new Date(iso);
   const h = d.getHours().toString().padStart(2, "0");
@@ -61,8 +46,6 @@ export function SliceThread({ slices }: { slices: Slice[] }) {
             return <QuoteBlock key={s.id} slice={s} />;
           case "reflection":
             return <ReflectionBlock key={s.id} slice={s} />;
-          case "feedback":
-            return <FeedbackBlock key={s.id} slice={s} />;
         }
       })}
     </div>
