@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_KEY}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash:generateContent?key=${GEMINI_KEY}`;
 
     const res = await fetch(url, {
       method: "POST",
