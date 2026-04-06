@@ -117,18 +117,18 @@ function QuoteBlock({
   const [editing, setEditing] = useState(false);
 
   return (
-    <div className="group border-l-2 border-stone-200 pl-6">
+    <div className="group bg-stone-100/60 -mx-4 px-4 py-5 border-l-2 border-stone-300 pl-6">
       <div className="flex items-start gap-1">
         {editing ? (
           <InlineEditor
             value={slice.body}
             onSave={(t) => { onEdit(t); setEditing(false); }}
             onCancel={() => setEditing(false)}
-            className="font-serif text-stone-600 text-lg leading-loose italic"
+            className="font-serif text-stone-500 text-lg leading-loose italic"
           />
         ) : (
           <>
-            <p className="font-serif text-stone-600 text-lg leading-loose italic flex-1">
+            <p className="font-serif text-stone-500 text-lg leading-loose italic flex-1">
               {slice.body}
             </p>
             <ActionButton onClick={() => setEditing(true)} label="編集">
@@ -183,11 +183,11 @@ function ReflectionBlock({
             value={slice.body}
             onSave={(t) => { onEdit(t); setEditing(false); }}
             onCancel={() => setEditing(false)}
-            className="font-serif text-stone-800 text-lg leading-loose font-medium"
+            className="font-sans text-stone-800 text-lg leading-loose font-medium"
           />
         ) : (
           <>
-            <p className="font-serif text-stone-800 text-lg leading-loose font-medium flex-1">
+            <p className="font-sans text-stone-800 text-lg leading-loose font-medium flex-1">
               {slice.body}
             </p>
             <ActionButton onClick={() => setEditing(true)} label="編集">
