@@ -124,11 +124,11 @@ function QuoteBlock({
             value={slice.body}
             onSave={(t) => { onEdit(t); setEditing(false); }}
             onCancel={() => setEditing(false)}
-            className="font-serif text-stone-600 text-sm leading-relaxed italic"
+            className="font-serif text-stone-600 text-lg leading-loose italic"
           />
         ) : (
           <>
-            <p className="font-serif text-stone-600 text-sm leading-relaxed italic flex-1">
+            <p className="font-serif text-stone-600 text-lg leading-loose italic flex-1">
               {slice.body}
             </p>
             <ActionButton onClick={() => setEditing(true)} label="編集">
@@ -143,7 +143,7 @@ function QuoteBlock({
       {!editing && (
         <div className="flex items-center justify-between mt-2">
           {slice.reference ? (
-            <span className="font-sans text-stone-400 text-xs tracking-widest">
+            <span className="font-sans text-stone-500 text-xs tracking-widest">
               {slice.reference}
             </span>
           ) : (
@@ -183,11 +183,11 @@ function ReflectionBlock({
             value={slice.body}
             onSave={(t) => { onEdit(t); setEditing(false); }}
             onCancel={() => setEditing(false)}
-            className="font-serif text-stone-800 text-sm leading-loose"
+            className="font-serif text-stone-800 text-lg leading-loose font-medium"
           />
         ) : (
           <>
-            <p className="font-serif text-stone-800 text-sm leading-loose flex-1">
+            <p className="font-serif text-stone-800 text-lg leading-loose font-medium flex-1">
               {slice.body}
             </p>
             <ActionButton onClick={() => setEditing(true)} label="編集">
@@ -200,7 +200,7 @@ function ReflectionBlock({
         )}
       </div>
       {!editing && (
-        <span className="font-sans text-stone-400 text-xs tracking-widest mt-2 block text-right">
+        <span className="font-sans text-stone-500 text-xs tracking-widest mt-2 block text-right">
           {formatTime(slice.createdAt)}
         </span>
       )}
@@ -287,11 +287,11 @@ export function SliceThread({
 
   return (
     <>
-      <div className="px-8 py-6 space-y-12">
+      <div className="px-8 py-8 space-y-16">
         {threads.map((item) => {
           if (item.kind === "quote-thread") {
             return (
-              <div key={item.quote.id} className="space-y-6">
+              <div key={item.quote.id} className="space-y-8">
                 <QuoteBlock
                   slice={item.quote}
                   onAddReflection={() => onReplyToQuote?.(item.quote.id)}

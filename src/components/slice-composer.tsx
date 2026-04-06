@@ -77,7 +77,7 @@ export function SliceComposer({
           onClick={() => onExpandChange(true)}
           className="
             w-full px-6 py-4 text-left
-            font-serif text-sm text-stone-300
+            font-serif text-base text-stone-300
           "
         >
           思索を書き留める...
@@ -130,7 +130,7 @@ export function SliceComposer({
               rows={2}
               className="
                 w-full resize-none bg-transparent
-                font-serif text-sm leading-relaxed
+                font-serif text-base leading-relaxed
                 text-stone-800 placeholder:text-stone-300
                 focus:outline-none
                 py-2
@@ -145,9 +145,9 @@ export function SliceComposer({
                   onChange={(e) => setReference(e.target.value)}
                   placeholder="p."
                   className="
-                    w-16 bg-transparent
-                    font-sans text-xs tracking-widest
-                    text-stone-400 placeholder:text-stone-300
+                    w-20 bg-transparent
+                    font-sans text-sm tracking-widest
+                    text-stone-500 placeholder:text-stone-400
                     border-b border-stone-200 focus:border-stone-400
                     focus:outline-none
                     py-1
@@ -169,8 +169,8 @@ export function SliceComposer({
             onClick={handleSubmit}
             disabled={!body.trim()}
             className="
-              mt-2 font-sans text-xs tracking-widest
-              text-stone-400 disabled:text-stone-200
+              mt-2 font-sans text-sm tracking-widest
+              text-stone-500 disabled:text-stone-200
               active:text-stone-600
               transition-colors
             "
