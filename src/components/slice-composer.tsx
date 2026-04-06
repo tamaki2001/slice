@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Camera } from "lucide-react";
+import { Camera, Quote, PenLine } from "lucide-react";
 import type { Slice } from "@/lib/types";
 
 type Mode = "quote" | "reflection";
@@ -90,13 +90,15 @@ export function SliceComposer({
     <div className="border-t border-stone-200 bg-background pb-[env(safe-area-inset-bottom,0.5rem)]">
       {/* モード切替 */}
       <div className="flex items-center gap-1 px-6 pt-3 pb-1">
-        <ModeToggle
-          label="引用"
+        <ModeIconToggle
+          icon={<Quote size={14} strokeWidth={1.5} />}
+          label="引用モード"
           active={mode === "quote"}
           onClick={() => setMode("quote")}
         />
-        <ModeToggle
-          label="内省"
+        <ModeIconToggle
+          icon={<PenLine size={14} strokeWidth={1.5} />}
+          label="記述モード"
           active={mode === "reflection"}
           onClick={() => setMode("reflection")}
         />
@@ -123,7 +125,7 @@ export function SliceComposer({
               placeholder={
                 mode === "quote"
                   ? "本文を引用..."
-                  : "思考の断片を..."
+                  : "思索を書き留める..."
               }
               rows={2}
               className="
@@ -181,11 +183,13 @@ export function SliceComposer({
   );
 }
 
-function ModeToggle({
+function ModeIconToggle({
+  icon,
   label,
   active,
   onClick,
 }: {
+  icon: React.ReactNode;
   label: string;
   active: boolean;
   onClick: () => void;
@@ -194,13 +198,14 @@ function ModeToggle({
     <button
       type="button"
       onClick={onClick}
+      aria-label={label}
       className={`
-        font-sans text-xs tracking-widest px-3 py-1
+        size-8 flex items-center justify-center
         transition-colors
         ${active ? "text-stone-800" : "text-stone-300 active:text-stone-500"}
       `}
     >
-      {label}
+      {icon}
     </button>
   );
 }

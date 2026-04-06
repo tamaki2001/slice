@@ -154,7 +154,7 @@ function QuoteBlock({
             onClick={onAddReflection}
             className="font-sans text-xs tracking-widest text-stone-300 active:text-stone-500 transition-colors"
           >
-            + 内省
+            +
           </button>
         </div>
       )}
