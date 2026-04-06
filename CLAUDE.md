@@ -15,10 +15,16 @@
 
 ## デザイン憲法（絶対遵守）
 
-- **Zero Noise**: shadow/グラデーション/角丸の乱用禁止。境界は余白で表現。
+- **Zero Noise**: shadow/グラデーション/角丸の乱用禁止。境界は余白で表現。カード型UIは使わない。
 - **Thematic Grayscale**: 純白(#FFF)/漆黒(#000)使用禁止。stone系のみ。
-- **Typography**: ユーザー入力コンテンツ→明朝体(font-serif)、システム情報→サンセリフ(font-sans text-sm tracking-widest)。
-- **Spatial Typography**: 余白は通常の1.5〜2倍。
+- **Spatial Typography**: 余白は通常の1.5〜2倍。ブロック間 space-y-16、スレッド内 space-y-8。
+- **引用と思索の視覚的分離**:
+  - 引用（quote）: `font-serif italic text-stone-500` + `bg-stone-100/60` の薄い背景 + 左ボーダー。他者の言葉は控えめに沈める。
+  - 思索（reflection）: `font-sans font-medium text-stone-800`。背景なし。自分の言葉が白い余白の上に浮き出る。
+- **モバイル視認性（老眼配慮）**: 本文は `text-lg leading-loose`。メタ情報（ページ番号・時刻）は `text-xs text-stone-500`（小さくてもコントラスト確保）。
+- **UIラベルのミニマル化**: 「内省」等の明示的テキストラベルは使わない。モード切替はアイコン（Quote/PenLine）のみ。
+- **触覚フィードバック**: フォーム展開時に軽い振動(10ms)、保存完了時にやや強い振動(20ms)。`navigator.vibrate` 非対応環境ではスキップ。
+- **アダプティブ入力**: SliceComposerは初期折りたたみ。「思索を書き留める...」バーをタップで展開。空欄でフォーカスを外すと自動閉じ。
 
 ## データ構造
 
