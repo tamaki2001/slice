@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Camera, Quote, PenLine } from "lucide-react";
+import { Camera, Quote, PenLine, Loader2 } from "lucide-react";
+import { imageFileToBase64 } from "@/lib/ocr";
 import type { Slice } from "@/lib/types";
 
 type Mode = "quote" | "reflection";
@@ -27,8 +28,10 @@ export function SliceComposer({
   const [mode, setMode] = useState<Mode>("quote");
   const [body, setBody] = useState("");
   const [reference, setReference] = useState("");
+  const [ocrLoading, setOcrLoading] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const composerRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (activeQuoteId) {
@@ -75,11 +78,47 @@ export function SliceComposer({
     }
   };
 
+  // ── 引用OCR ──
+  const handleOcrCapture = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
+  const handleFileSelected = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // inputをリセット（同じファイルを再選択可能にする）
+    e.target.value = "";
+
+    setOcrLoading(true);
+    haptic("light");
+
+    try {
+      const base64 = await imageFileToBase64(file);
+
+      const res = await fetch("/api/ocr", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageBase64: base64 }),
+      });
+
+      if (!res.ok) throw new Error("OCR失敗");
+
+      const { text } = await res.json();
+      if (text) {
+        setBody((prev) => (prev ? prev + "\n" + text : text));
+        haptic("medium");
+      }
+    } catch {
+      // エラー時は何もしない（ユーザーは手動入力にフォールバック）
+    } finally {
+      setOcrLoading(false);
+      requestAnimationFrame(() => textareaRef.current?.focus());
+    }
+  }, []);
+
   if (!expanded) {
     return (
-      <div
-        className="border-t border-stone-200 bg-background pb-[env(safe-area-inset-bottom,0.5rem)]"
-      >
+      <div className="border-t border-stone-200 bg-background pb-[env(safe-area-inset-bottom,0.5rem)]">
         <button
           type="button"
           onClick={() => onExpandChange(true)}
@@ -96,6 +135,16 @@ export function SliceComposer({
 
   return (
     <div ref={composerRef} className="border-t border-stone-200 bg-background pb-[env(safe-area-inset-bottom,0.5rem)]">
+      {/* 非表示のファイル入力（カメラ撮影用） */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={handleFileSelected}
+      />
+
       {/* モード切替 */}
       <div className="flex items-center gap-1 px-6 pt-3 pb-1">
         <ModeIconToggle
@@ -116,18 +165,25 @@ export function SliceComposer({
       <div className="px-6 pb-3">
         <div className="flex items-start gap-3">
           <div className="flex-1">
+            {/* OCR中のインジケーター */}
+            {ocrLoading && (
+              <div className="flex items-center gap-2 py-3">
+                <Loader2 size={14} className="animate-spin text-stone-400" />
+                <span className="font-serif text-sm text-stone-400 animate-pulse">
+                  テキストを抽出中...
+                </span>
+              </div>
+            )}
+
             <textarea
               ref={textareaRef}
               value={body}
               onChange={(e) => setBody(e.target.value)}
               onKeyDown={handleKeyDown}
               onBlur={() => {
-                if (!body.trim()) {
+                if (!body.trim() && !ocrLoading) {
                   setTimeout(() => {
-                    // Composer内の他の要素にフォーカスが移った場合は折りたたまない
-                    if (
-                      composerRef.current?.contains(document.activeElement)
-                    ) return;
+                    if (composerRef.current?.contains(document.activeElement)) return;
                     if (!body.trim()) onExpandChange(false);
                   }, 200);
                 }
@@ -166,9 +222,11 @@ export function SliceComposer({
                 <button
                   type="button"
                   tabIndex={-1}
-                  aria-label="カメラで引用を取り込む（準備中）"
-                  className="text-stone-300 active:text-stone-500"
+                  aria-label="カメラで引用を取り込む"
+                  className="size-8 flex items-center justify-center text-stone-400 active:text-stone-600"
                   onMouseDown={(e) => e.preventDefault()}
+                  onClick={handleOcrCapture}
+                  disabled={ocrLoading}
                 >
                   <Camera size={16} strokeWidth={1.5} />
                 </button>
@@ -179,7 +237,7 @@ export function SliceComposer({
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={!body.trim()}
+            disabled={!body.trim() || ocrLoading}
             className="
               mt-2 font-sans text-sm tracking-widest
               text-stone-500 disabled:text-stone-200
