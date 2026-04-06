@@ -26,7 +26,7 @@ export function BookDetailSheet({
       <SheetContent
         side="bottom"
         showCloseButton={false}
-        className="sm:hidden rounded-t-2xl max-h-[85vh] pb-[env(safe-area-inset-bottom,1rem)]"
+        className="sm:hidden rounded-t-2xl max-h-[85vh] pb-[env(safe-area-inset-bottom,1rem)] backdrop-blur-none"
       >
         <SheetHeader className="sr-only">
           <SheetTitle>{book.title} の詳細</SheetTitle>
@@ -39,7 +39,7 @@ export function BookDetailSheet({
       <SheetContent
         side="right"
         showCloseButton
-        className="hidden sm:flex sm:flex-col sm:w-96"
+        className="hidden sm:flex sm:flex-col sm:w-96 backdrop-blur-none"
       >
         <SheetHeader className="sr-only">
           <SheetTitle>{book.title} の詳細</SheetTitle>
