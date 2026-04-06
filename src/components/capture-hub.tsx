@@ -108,7 +108,9 @@ export function CaptureHub() {
       }
 
       if (results.length > 0) {
-        log(`候補: ${results.length}件`);
+        for (const r of results) {
+          log(`候補: "${r.title}" isbn=${r.isbn ?? "なし"} cover=${r.coverUrl ? "あり" : "なし"}`);
+        }
         return results;
       }
 
