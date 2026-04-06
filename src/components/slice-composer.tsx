@@ -80,7 +80,7 @@ export function SliceComposer({
             font-serif text-sm text-stone-300
           "
         >
-          思考を記録する...
+          思索を書き留める...
         </button>
       </div>
     );
