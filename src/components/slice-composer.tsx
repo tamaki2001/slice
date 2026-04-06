@@ -28,6 +28,7 @@ export function SliceComposer({
   const [body, setBody] = useState("");
   const [reference, setReference] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const composerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (activeQuoteId) {
@@ -94,7 +95,7 @@ export function SliceComposer({
   }
 
   return (
-    <div className="border-t border-stone-200 bg-background pb-[env(safe-area-inset-bottom,0.5rem)]">
+    <div ref={composerRef} className="border-t border-stone-200 bg-background pb-[env(safe-area-inset-bottom,0.5rem)]">
       {/* モード切替 */}
       <div className="flex items-center gap-1 px-6 pt-3 pb-1">
         <ModeIconToggle
@@ -122,9 +123,11 @@ export function SliceComposer({
               onKeyDown={handleKeyDown}
               onBlur={() => {
                 if (!body.trim()) {
-                  // テキストが空のときフォーカスを外したら折りたたむ
-                  // 少し遅延させてボタンクリックが先に処理されるようにする
                   setTimeout(() => {
+                    // Composer内の他の要素にフォーカスが移った場合は折りたたまない
+                    if (
+                      composerRef.current?.contains(document.activeElement)
+                    ) return;
                     if (!body.trim()) onExpandChange(false);
                   }, 200);
                 }
@@ -162,8 +165,10 @@ export function SliceComposer({
                 />
                 <button
                   type="button"
+                  tabIndex={-1}
                   aria-label="カメラで引用を取り込む（準備中）"
                   className="text-stone-300 active:text-stone-500"
+                  onMouseDown={(e) => e.preventDefault()}
                 >
                   <Camera size={16} strokeWidth={1.5} />
                 </button>
@@ -205,6 +210,7 @@ function ModeIconToggle({
     <button
       type="button"
       onClick={onClick}
+      onMouseDown={(e) => e.preventDefault()}
       aria-label={label}
       className={`
         size-8 flex items-center justify-center
