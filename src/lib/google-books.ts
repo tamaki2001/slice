@@ -11,7 +11,19 @@ type GoogleBooksItem = {
 };
 
 export async function searchGoogleBooksByISBN(isbn: string): Promise<BookCandidate[]> {
-  return searchGoogleBooks(`isbn:${isbn}`);
+  // ISBN検索は複数の形式で試行
+  for (const q of [`isbn:${isbn}`, isbn]) {
+    const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=5`;
+    const res = await fetch(url);
+    if (!res.ok) continue;
+
+    const json = await res.json();
+    const items: GoogleBooksItem[] = json.items ?? [];
+    if (items.length > 0) {
+      return buildCandidates(items);
+    }
+  }
+  return [];
 }
 
 export async function searchGoogleBooks(query: string): Promise<BookCandidate[]> {
@@ -23,12 +35,21 @@ export async function searchGoogleBooks(query: string): Promise<BookCandidate[]>
   const json = await res.json();
   const items: GoogleBooksItem[] = json.items ?? [];
 
-  // DB内の既存書籍を検索
+  return buildCandidates(items, query);
+}
+
+async function buildCandidates(
+  items: GoogleBooksItem[],
+  dbSearchQuery?: string
+): Promise<BookCandidate[]> {
+  // DB内の既存書籍を検索（クエリがあれば）
   let existingBooks: BookWithPreview[] = [];
-  try {
-    existingBooks = await searchBooksByTitle(query);
-  } catch {
-    // DB検索失敗時は空で続行
+  if (dbSearchQuery) {
+    try {
+      existingBooks = await searchBooksByTitle(dbSearchQuery);
+    } catch {
+      // DB検索失敗時は空で続行
+    }
   }
 
   return items
@@ -38,7 +59,6 @@ export async function searchGoogleBooks(query: string): Promise<BookCandidate[]>
       const title = v.title ?? "";
       const author = v.authors?.join(", ") ?? "";
 
-      // 既存書籍とのマッチング（タイトル部分一致）
       const existing = existingBooks.find(
         (b) =>
           b.title === title ||

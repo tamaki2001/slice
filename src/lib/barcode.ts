@@ -9,6 +9,7 @@ function getReader(): BrowserMultiFormatReader {
       BarcodeFormat.EAN_13,
       BarcodeFormat.EAN_8,
     ]);
+    hints.set(DecodeHintType.TRY_HARDER, true);
     reader = new BrowserMultiFormatReader(hints);
   }
   return reader;
@@ -19,23 +20,26 @@ export function startBarcodeScanner(
   onDetect: (isbn: string) => void
 ): { stop: () => void } {
   let stopped = false;
+  let detected = false;
   const r = getReader();
 
   const scan = async () => {
-    if (stopped) return;
+    if (stopped || detected) return;
     try {
       const result = await r.decodeFromVideoElement(video);
-      const text = result.getText();
-      // ISBN: 978 or 979で始まる13桁
-      if (/^97[89]\d{10}$/.test(text)) {
+      const text = result.getText().replace(/\D/g, "");
+
+      // ISBN-13 (978/979) またはEAN-13の数字13桁
+      if (text.length === 13 && /^97[89]/.test(text)) {
+        detected = true;
         onDetect(text);
         return;
       }
     } catch {
-      // デコード失敗は無視して再試行
+      // デコード失敗→再試行
     }
-    if (!stopped) {
-      requestAnimationFrame(scan);
+    if (!stopped && !detected) {
+      setTimeout(scan, 300);
     }
   };
 

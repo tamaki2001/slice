@@ -29,6 +29,7 @@ export function CaptureHub() {
   const streamRef = useRef<MediaStream | null>(null);
   const scannerRef = useRef<{ stop: () => void } | null>(null);
   const barcodeFoundRef = useRef(false);
+  const barcodeCallbackRef = useRef<(isbn: string) => void>(() => {});
 
   // カメラ自動起動
   useEffect(() => {
@@ -48,10 +49,9 @@ export function CaptureHub() {
         videoRef.current.srcObject = stream;
         setCameraReady(true);
 
-        // バーコードスキャン開始（常時バックグラウンド）
         scannerRef.current = startBarcodeScanner(
           videoRef.current,
-          handleBarcodeDetect
+          (isbn) => barcodeCallbackRef.current(isbn)
         );
       }
     } catch {
@@ -73,6 +73,7 @@ export function CaptureHub() {
   }, []);
 
   // ── ①バーコード検知（最速ルート） ──
+  // refを常に最新のコールバックに更新
   const handleBarcodeDetect = useCallback(
     async (isbn: string) => {
       if (barcodeFoundRef.current) return;
@@ -92,6 +93,11 @@ export function CaptureHub() {
     },
     [stopCamera, showResults]
   );
+
+  // refを常に最新に
+  useEffect(() => {
+    barcodeCallbackRef.current = handleBarcodeDetect;
+  }, [handleBarcodeDetect]);
 
   // ── ②撮影→Gemini画像解析 ──
   const handleCapture = useCallback(async () => {
