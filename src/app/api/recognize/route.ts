@@ -30,7 +30,14 @@ export async function POST(req: NextRequest) {
           {
             parts: [
               {
-                text: 'この画像に写っている本の「タイトル」「著者名」「ISBN」を推測してください。JSON形式で {"title": "...", "author": "...", "isbn": "..."} のみを返してください。特定できない項目は空文字にしてください。',
+                text: `あなたは書籍認識の専門家です。この画像は本の表紙または裏表紙の写真です。
+画像に写っている本のタイトル、著者名、ISBNを読み取ってください。
+表紙に書かれている文字を注意深く読んでください。
+
+以下のJSON形式のみで回答してください（説明文は不要）:
+{"title": "本のタイトル", "author": "著者名", "isbn": "ISBN番号"}
+
+読み取れない項目は空文字にしてください。`,
               },
               {
                 inline_data: {
@@ -42,8 +49,8 @@ export async function POST(req: NextRequest) {
           },
         ],
         generationConfig: {
-          maxOutputTokens: 256,
-          temperature: 0.1,
+          maxOutputTokens: 512,
+          temperature: 0,
         },
       }),
     });
@@ -57,21 +64,26 @@ export async function POST(req: NextRequest) {
     }
 
     const data = await res.json();
-    const content =
-      data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
 
-    console.log("[recognize] Gemini raw:", content);
+    // gemini-2.5-flashはthinkingモデル。parts全体からテキストを結合
+    const parts = data.candidates?.[0]?.content?.parts ?? [];
+    const allText = parts
+      .filter((p: Record<string, unknown>) => typeof p.text === "string")
+      .map((p: Record<string, unknown>) => p.text as string)
+      .join("\n");
 
-    // JSONブロック抽出（```json...```やマークダウンコードブロック対応）
-    const cleaned = content
+    console.log("[recognize] Gemini raw:", allText.slice(0, 500));
+
+    // JSONブロック抽出
+    const cleaned = allText
       .replace(/```json\s*/gi, "")
       .replace(/```\s*/g, "")
       .trim();
 
-    const match = cleaned.match(/\{[\s\S]*\}/);
+    const match = cleaned.match(/\{[^{}]*"title"[^{}]*\}/);
     if (!match) {
-      console.log("[recognize] JSON抽出失敗");
-      return NextResponse.json({ title: "", author: "", isbn: "" });
+      console.log("[recognize] JSON抽出失敗。応答:", allText.slice(0, 200));
+      return NextResponse.json({ title: "", author: "", isbn: "", raw: allText.slice(0, 200) });
     }
 
     try {
@@ -85,7 +97,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(result);
     } catch (parseErr) {
       console.log("[recognize] JSONパース失敗:", parseErr, match[0]);
-      return NextResponse.json({ title: "", author: "", isbn: "" });
+      return NextResponse.json({ title: "", author: "", isbn: "", raw: match[0] });
     }
   } catch (e) {
     return NextResponse.json(

@@ -184,8 +184,9 @@ export function CaptureHub() {
 
       if (res.ok) {
         const data = await res.json();
-        const { title, author, isbn } = data;
+        const { title, author, isbn, raw } = data;
         log(`Gemini応答: title="${title}" author="${author}" isbn="${isbn}"`);
+        if (raw) log(`Gemini raw: ${raw}`);
         geminiTitle = title || "";
 
         // ISBNがあればISBN検索
