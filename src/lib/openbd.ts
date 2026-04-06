@@ -20,11 +20,17 @@ export async function searchOpenBD(isbn: string): Promise<BookCandidate | null> 
     if (!book?.summary?.title) return null;
 
     const s = book.summary;
+
+    // 書影: API返却値 → OpenBDカバーエンドポイント → Google Booksサムネイル
+    const coverUrl =
+      s.cover?.replace("http://", "https://") ||
+      `https://cover.openbd.jp/${isbn}.jpg`;
+
     return {
       googleBooksId: `openbd-${isbn}`,
       title: s.title!,
       author: s.author ?? "",
-      coverUrl: s.cover?.replace("http://", "https://") || undefined,
+      coverUrl,
     };
   } catch {
     return null;

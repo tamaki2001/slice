@@ -77,24 +77,40 @@ export function CaptureHub() {
   // ── ISBN → 書籍検索（OpenBD優先） ──
   const searchByISBN = useCallback(
     async (isbn: string): Promise<BookCandidate[]> => {
-      // 1. OpenBD
-      log(`OpenBD検索: ${isbn}`);
-      const openbd = await searchOpenBD(isbn);
+      // 1. OpenBD + Google Booksを並行検索
+      log(`ISBN検索開始: ${isbn}`);
+      const [openbd, gbResults] = await Promise.all([
+        searchOpenBD(isbn).catch(() => null),
+        searchGoogleBooksByISBN(isbn).catch(() => [] as BookCandidate[]),
+      ]);
+
+      const results: BookCandidate[] = [];
+
       if (openbd) {
-        log(`OpenBDヒット: ${openbd.title}`);
-        return [openbd];
+        log(`OpenBDヒット: ${openbd.title} (cover: ${openbd.coverUrl ?? "なし"})`);
+        // Google Booksの書影で補完
+        const gbMatch = gbResults.find((g) =>
+          g.title.includes(openbd.title) || openbd.title.includes(g.title)
+        );
+        if (gbMatch?.coverUrl && !openbd.coverUrl?.includes("cover.openbd.jp")) {
+          openbd.coverUrl = gbMatch.coverUrl;
+        }
+        results.push(openbd);
       }
-      log("OpenBD: 該当なし");
 
-      // 2. Google Books (ISBN)
-      log(`Google Books ISBN検索: ${isbn}`);
-      const gbIsbn = await searchGoogleBooksByISBN(isbn);
-      if (gbIsbn.length > 0) {
-        log(`Google Booksヒット: ${gbIsbn.length}件`);
-        return gbIsbn;
+      // Google Booksの結果も追加（重複タイトル除外）
+      for (const gb of gbResults) {
+        if (!results.some((r) => r.title === gb.title)) {
+          results.push(gb);
+        }
       }
-      log("Google Books ISBN: 該当なし");
 
+      if (results.length > 0) {
+        log(`候補: ${results.length}件`);
+        return results;
+      }
+
+      log("ISBN検索: 該当なし");
       return [];
     },
     [log]
