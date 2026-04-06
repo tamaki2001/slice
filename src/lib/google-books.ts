@@ -10,8 +10,12 @@ type GoogleBooksItem = {
   };
 };
 
+export async function searchGoogleBooksByISBN(isbn: string): Promise<BookCandidate[]> {
+  return searchGoogleBooks(`isbn:${isbn}`);
+}
+
 export async function searchGoogleBooks(query: string): Promise<BookCandidate[]> {
-  const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=8&langRestrict=ja`;
+  const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=8`;
 
   const res = await fetch(url);
   if (!res.ok) return [];

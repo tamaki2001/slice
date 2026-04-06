@@ -3,19 +3,19 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { searchGoogleBooks } from "@/lib/google-books";
+import { searchGoogleBooks, searchGoogleBooksByISBN } from "@/lib/google-books";
 import { createBook } from "@/lib/db";
-import { extractTextFromImage, captureFrameAsBase64 } from "@/lib/ocr";
+import { captureFrameAsBase64 } from "@/lib/ocr";
+import { startBarcodeScanner } from "@/lib/barcode";
 import type { BookCandidate } from "@/lib/types";
 import { CandidateList } from "./candidate-list";
 
 type Phase = "camera" | "analyzing" | "candidates" | "manual";
 
 const STEPS = [
-  "書影を読み取り中...",
-  "テキストを解析中...",
-  "書籍を検索中...",
-  "画像認識で特定中...",
+  "本の魂（ISBN）を探索中...",
+  "書影から記憶を辿り中...",
+  "書籍を照合中...",
 ];
 
 export function CaptureHub() {
@@ -27,6 +27,8 @@ export function CaptureHub() {
   const [cameraReady, setCameraReady] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const scannerRef = useRef<{ stop: () => void } | null>(null);
+  const barcodeFoundRef = useRef(false);
 
   // カメラ自動起動
   useEffect(() => {
@@ -36,6 +38,7 @@ export function CaptureHub() {
   }, []);
 
   const startCamera = useCallback(async () => {
+    barcodeFoundRef.current = false;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "environment", width: { ideal: 1280 } },
@@ -44,60 +47,62 @@ export function CaptureHub() {
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         setCameraReady(true);
+
+        // バーコードスキャン開始（常時バックグラウンド）
+        scannerRef.current = startBarcodeScanner(
+          videoRef.current,
+          handleBarcodeDetect
+        );
       }
     } catch {
-      // カメラ非対応→手動検索
       setPhase("manual");
     }
   }, []);
 
   const stopCamera = useCallback(() => {
+    scannerRef.current?.stop();
+    scannerRef.current = null;
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
     setCameraReady(false);
   }, []);
 
-  // ── 検索結果をCandidateListへ渡す共通処理 ──
-  const showResults = useCallback(
-    (results: BookCandidate[]) => {
-      setCandidates(results);
-      if (results.length > 0) {
-        setPhase("candidates");
-      } else {
-        setPhase("manual");
+  const showResults = useCallback((results: BookCandidate[]) => {
+    setCandidates(results);
+    setPhase(results.length > 0 ? "candidates" : "manual");
+  }, []);
+
+  // ── ①バーコード検知（最速ルート） ──
+  const handleBarcodeDetect = useCallback(
+    async (isbn: string) => {
+      if (barcodeFoundRef.current) return;
+      barcodeFoundRef.current = true;
+
+      stopCamera();
+      setPhase("analyzing");
+      setStepLabel(STEPS[0]);
+
+      try {
+        setStepLabel(STEPS[2]);
+        const results = await searchGoogleBooksByISBN(isbn);
+        showResults(results);
+      } catch {
+        showResults([]);
       }
     },
-    []
+    [stopCamera, showResults]
   );
 
-  // ── メイン認識フロー ──
+  // ── ②撮影→Gemini画像解析 ──
   const handleCapture = useCallback(async () => {
     if (!videoRef.current) return;
 
     const base64 = captureFrameAsBase64(videoRef.current);
     stopCamera();
     setPhase("analyzing");
+    setStepLabel(STEPS[1]);
 
-    // Step 1: ブラウザ側OCR
-    setStepLabel(STEPS[0]);
-    try {
-      setStepLabel(STEPS[1]);
-      const ocrText = await extractTextFromImage(`data:image/jpeg;base64,${base64}`);
-
-      if (ocrText.length > 2) {
-        setStepLabel(STEPS[2]);
-        const results = await searchGoogleBooks(ocrText.slice(0, 80));
-        if (results.length > 0) {
-          showResults(results);
-          return;
-        }
-      }
-    } catch {
-      // OCR失敗→Step2へ
-    }
-
-    // Step 2: サーバー側画像認識
-    setStepLabel(STEPS[3]);
+    // Geminiサーバー側画像認識
     try {
       const res = await fetch("/api/recognize", {
         method: "POST",
@@ -106,9 +111,20 @@ export function CaptureHub() {
       });
 
       if (res.ok) {
-        const { title, author } = await res.json();
-        const query = [title, author].filter(Boolean).join(" ");
+        const { title, author, isbn } = await res.json();
 
+        // ISBNがあればISBN検索優先
+        if (isbn && /^97[89]/.test(isbn)) {
+          setStepLabel(STEPS[2]);
+          const results = await searchGoogleBooksByISBN(isbn);
+          if (results.length > 0) {
+            showResults(results);
+            return;
+          }
+        }
+
+        // タイトル/著者で検索
+        const query = [title, author].filter(Boolean).join(" ");
         if (query.length > 1) {
           setStepLabel(STEPS[2]);
           const results = await searchGoogleBooks(query);
@@ -119,10 +135,9 @@ export function CaptureHub() {
         }
       }
     } catch {
-      // Vision API失敗
+      // Gemini失敗
     }
 
-    // 全て失敗→手動検索にフォールバック
     showResults([]);
   }, [stopCamera, showResults]);
 
@@ -142,7 +157,7 @@ export function CaptureHub() {
     }
   }, [searchQuery, showResults]);
 
-  // ── 書籍選択ハンドラ ──
+  // ── 書籍選択 ──
   const handleSelectExisting = useCallback(
     (bookId: string) => router.push(`/book/${bookId}`),
     [router]
@@ -169,6 +184,7 @@ export function CaptureHub() {
     setPhase("camera");
     setCandidates([]);
     setSearchQuery("");
+    barcodeFoundRef.current = false;
     startCamera();
   }, [startCamera]);
 
@@ -196,6 +212,16 @@ export function CaptureHub() {
               muted
               className="w-full h-full object-cover"
             />
+            {/* バーコード読み取り枠ガイド */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="w-3/4 h-16 border border-stone-400/40 rounded-sm" />
+            </div>
+            {/* ヒント */}
+            <div className="absolute bottom-4 inset-x-0 text-center pointer-events-none">
+              <span className="font-sans text-xs tracking-widest text-stone-100/70 bg-stone-800/30 px-3 py-1">
+                バーコードまたは表紙をかざす
+              </span>
+            </div>
           </div>
 
           {/* シャッターボタン */}
@@ -215,7 +241,6 @@ export function CaptureHub() {
             />
           </div>
 
-          {/* 手動検索リンク */}
           <button
             type="button"
             onClick={() => setPhase("manual")}
@@ -240,7 +265,7 @@ export function CaptureHub() {
       {phase === "manual" && (
         <div className="flex-1 flex flex-col px-8 gap-6 pt-8">
           <p className="font-serif text-sm text-stone-400 leading-relaxed">
-            書影を認識できませんでした。タイトルを入力してください。
+            自動認識できませんでした。タイトルを入力してください。
           </p>
           <input
             type="text"

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY ?? "";
+const GEMINI_KEY = process.env.GOOGLE_GENERATIVE_AI_API_KEY ?? "";
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,64 +13,63 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!OPENAI_API_KEY) {
+    if (!GEMINI_KEY) {
       return NextResponse.json(
-        { error: "OPENAI_API_KEY が未設定です" },
+        { error: "GOOGLE_GENERATIVE_AI_API_KEY が未設定です" },
         { status: 500 }
       );
     }
 
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
+
+    const res = await fetch(url, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "gpt-4o",
-        messages: [
+        contents: [
           {
-            role: "user",
-            content: [
+            parts: [
               {
-                type: "text",
-                text: 'この画像に写っている本の「タイトル」と「著者名」を特定してください。JSON形式で {"title": "...", "author": "..."} のみを返してください。特定できない場合は {"title": "", "author": ""} を返してください。',
+                text: 'この画像に写っている本の「タイトル」「著者名」「ISBN」を推測してください。JSON形式で {"title": "...", "author": "...", "isbn": "..."} のみを返してください。特定できない項目は空文字にしてください。',
               },
               {
-                type: "image_url",
-                image_url: {
-                  url: `data:image/jpeg;base64,${imageBase64}`,
-                  detail: "low",
+                inline_data: {
+                  mime_type: "image/jpeg",
+                  data: imageBase64,
                 },
               },
             ],
           },
         ],
-        max_tokens: 200,
+        generationConfig: {
+          maxOutputTokens: 256,
+          temperature: 0.1,
+        },
       }),
     });
 
     if (!res.ok) {
       const err = await res.text();
       return NextResponse.json(
-        { error: `OpenAI API エラー: ${err}` },
+        { error: `Gemini API エラー: ${err}` },
         { status: 502 }
       );
     }
 
     const data = await res.json();
-    const content = data.choices?.[0]?.message?.content ?? "";
+    const content =
+      data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
 
-    // JSONを抽出
     const match = content.match(/\{[\s\S]*?\}/);
     if (!match) {
-      return NextResponse.json({ title: "", author: "" });
+      return NextResponse.json({ title: "", author: "", isbn: "" });
     }
 
     const parsed = JSON.parse(match[0]);
     return NextResponse.json({
       title: parsed.title ?? "",
       author: parsed.author ?? "",
+      isbn: parsed.isbn ?? "",
     });
   } catch (e) {
     return NextResponse.json(
