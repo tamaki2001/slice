@@ -11,13 +11,19 @@ type GoogleBooksItem = {
 };
 
 export async function searchGoogleBooksByISBN(isbn: string): Promise<BookCandidate[]> {
-  // ISBN検索は複数の形式で試行
   for (const q of [`isbn:${isbn}`, isbn]) {
     const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=5`;
     const res = await fetch(url);
-    if (!res.ok) continue;
+    if (!res.ok) {
+      console.log(`[google-books] API error ${res.status} for "${q}"`);
+      continue;
+    }
 
     const json = await res.json();
+    if (json.error) {
+      console.log(`[google-books] API error:`, json.error.message);
+      continue;
+    }
     const items: GoogleBooksItem[] = json.items ?? [];
     if (items.length > 0) {
       return buildCandidates(items);
@@ -30,9 +36,16 @@ export async function searchGoogleBooks(query: string): Promise<BookCandidate[]>
   const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=8`;
 
   const res = await fetch(url);
-  if (!res.ok) return [];
+  if (!res.ok) {
+    console.log(`[google-books] API error ${res.status} for "${query}"`);
+    return [];
+  }
 
   const json = await res.json();
+  if (json.error) {
+    console.log(`[google-books] API error:`, json.error.message);
+    return [];
+  }
   const items: GoogleBooksItem[] = json.items ?? [];
 
   return buildCandidates(items, query);
@@ -42,7 +55,6 @@ async function buildCandidates(
   items: GoogleBooksItem[],
   dbSearchQuery?: string
 ): Promise<BookCandidate[]> {
-  // DB内の既存書籍を検索（クエリがあれば）
   let existingBooks: BookWithPreview[] = [];
   if (dbSearchQuery) {
     try {

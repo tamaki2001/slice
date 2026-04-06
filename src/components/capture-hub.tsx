@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { searchGoogleBooks, searchGoogleBooksByISBN } from "@/lib/google-books";
 import { searchOpenBD } from "@/lib/openbd";
+import { searchNDL, searchNDLByISBN } from "@/lib/ndl";
 import { createBook } from "@/lib/db";
 import { captureFrameAsBase64 } from "@/lib/ocr";
 import { startBarcodeScanner } from "@/lib/barcode";
@@ -111,7 +112,15 @@ export function CaptureHub() {
         return results;
       }
 
-      log("ISBN検索: 該当なし");
+      // 3. NDL（国立国会図書館）
+      log("NDL ISBN検索...");
+      const ndlResults = await searchNDLByISBN(isbn).catch(() => []);
+      if (ndlResults.length > 0) {
+        log(`NDLヒット: ${ndlResults[0].title}`);
+        return ndlResults;
+      }
+
+      log("ISBN検索: 全API該当なし");
       return [];
     },
     [log]
@@ -210,11 +219,22 @@ export function CaptureHub() {
         ].filter((q) => q.length > 1);
 
         for (const q of queries) {
-          log(`検索試行: "${q}"`);
+          log(`Google Books: "${q}"`);
           const results = await searchGoogleBooks(q);
           if (results.length > 0) {
             log(`ヒット: ${results.length}件`);
             showResults(results);
+            return;
+          }
+        }
+
+        // NDLフォールバック（タイトルのみ）
+        if (title) {
+          log(`NDL検索: "${title}"`);
+          const ndlResults = await searchNDL(title).catch(() => []);
+          if (ndlResults.length > 0) {
+            log(`NDLヒット: ${ndlResults.length}件`);
+            showResults(ndlResults);
             return;
           }
         }
@@ -240,9 +260,18 @@ export function CaptureHub() {
     log(`手動検索: "${query}"`);
 
     try {
-      const results = await searchGoogleBooks(query);
-      log(`検索結果: ${results.length}件`);
-      showResults(results, query);
+      // Google Books → NDLフォールバック
+      const gbResults = await searchGoogleBooks(query);
+      if (gbResults.length > 0) {
+        log(`Google Books: ${gbResults.length}件`);
+        showResults(gbResults, query);
+        return;
+      }
+
+      log("Google Books: 該当なし、NDL検索...");
+      const ndlResults = await searchNDL(query);
+      log(`NDL: ${ndlResults.length}件`);
+      showResults(ndlResults.length > 0 ? ndlResults : [], query);
     } catch (e) {
       log(`検索エラー: ${e}`);
       showResults([], query);
