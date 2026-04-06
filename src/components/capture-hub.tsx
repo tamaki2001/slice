@@ -88,12 +88,13 @@ export function CaptureHub() {
 
       if (openbd) {
         log(`OpenBDヒット: ${openbd.title} (cover: ${openbd.coverUrl ?? "なし"})`);
-        // Google Booksの書影で補完
-        const gbMatch = gbResults.find((g) =>
-          g.title.includes(openbd.title) || openbd.title.includes(g.title)
-        );
-        if (gbMatch?.coverUrl && !openbd.coverUrl?.includes("cover.openbd.jp")) {
-          openbd.coverUrl = gbMatch.coverUrl;
+        // 書影がなければGoogle Booksから補完
+        if (!openbd.coverUrl) {
+          const gbCover = gbResults.find((g) => g.coverUrl)?.coverUrl;
+          if (gbCover) {
+            openbd.coverUrl = gbCover;
+            log(`Google Books書影で補完: ${gbCover}`);
+          }
         }
         results.push(openbd);
       }

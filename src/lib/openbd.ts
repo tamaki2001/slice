@@ -21,10 +21,7 @@ export async function searchOpenBD(isbn: string): Promise<BookCandidate | null> 
 
     const s = book.summary;
 
-    // 書影: API返却値 → OpenBDカバーエンドポイント → Google Booksサムネイル
-    const coverUrl =
-      s.cover?.replace("http://", "https://") ||
-      `https://cover.openbd.jp/${isbn}.jpg`;
+    const coverUrl = s.cover?.replace("http://", "https://") || undefined;
 
     return {
       googleBooksId: `openbd-${isbn}`,

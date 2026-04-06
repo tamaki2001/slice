@@ -49,6 +49,7 @@ export function CandidateList({
                 src={c.coverUrl}
                 alt=""
                 className="w-10 h-14 object-contain flex-shrink-0"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
               />
             ) : (
               <div className="w-10 h-14 bg-stone-200 flex-shrink-0" />
