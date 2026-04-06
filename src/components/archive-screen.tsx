@@ -5,51 +5,37 @@ import { TimelineEntry } from "./timeline-entry";
 const entries = [
   {
     id: "1",
-    label: "1時間前",
     excerpt:
-      "言葉が静かに降り積もるような読書体験だった。著者の視線はいつも地面すれすれを這っていて、そこに咲く名もない花を丁寧に掬い上げる。",
+      "第2章読了。アンラーニングの本質は、忘れることではなく、新しいレンズを手に入れることだ。文体も美しい。",
+    timestamp: "1時間前",
+    gap: "mb-6",
   },
   {
     id: "2",
-    label: "2時間前",
     excerpt:
       "物語の輪郭がぼんやりとしか見えない。それが心地よい。すべてを理解しなくても、ただそこに居ることが許される本。",
+    timestamp: "2時間前",
+    gap: "pb-32",
   },
   {
     id: "3",
-    label: "5日前",
     excerpt:
       "最初の一文で呼吸が変わった。久しぶりに、読み終わるのが惜しいと思える一冊に出会えた。",
+    timestamp: "1週間前",
+    gap: "",
   },
 ];
 
-function logGap(hoursAgo1: number, hoursAgo2: number): number {
-  const diff = Math.abs(hoursAgo2 - hoursAgo1);
-  return Math.max(32, Math.round(Math.log2(diff + 1) * 40));
-}
-
-const hoursMap = [1, 2, 120];
-
 export function ArchiveScreen() {
   return (
-    <div className="min-h-full bg-background">
-      <div className="px-8 pt-14 pb-4">
-        <span className="text-stone-400 font-sans text-xs tracking-widest uppercase">
-          Archive
-        </span>
-      </div>
-
-      <div className="px-4 pb-20">
-        {entries.map((entry, i) => (
-          <div key={entry.id}>
-            {i > 0 && (
-              <div
-                style={{
-                  height: `${logGap(hoursMap[i - 1], hoursMap[i])}px`,
-                }}
-              />
-            )}
-            <TimelineEntry label={entry.label} excerpt={entry.excerpt} />
+    <div className="min-h-full bg-background overflow-y-auto">
+      <div className="px-4 pt-14 pb-20">
+        {entries.map((entry) => (
+          <div key={entry.id} className={entry.gap}>
+            <TimelineEntry
+              excerpt={entry.excerpt}
+              timestamp={entry.timestamp}
+            />
           </div>
         ))}
       </div>

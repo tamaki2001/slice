@@ -4,8 +4,13 @@ import { useState } from "react";
 import { BookCover } from "./book-cover";
 import { ThoughtInput } from "./thought-input";
 
-export function ThoughtScreen() {
+export function ThoughtScreen({ onSave }: { onSave?: () => void }) {
   const [text, setText] = useState("");
+
+  const handleSave = () => {
+    // TODO: データ永続化
+    onSave?.();
+  };
 
   return (
     <div className="min-h-full flex flex-col bg-background">
@@ -18,6 +23,7 @@ export function ThoughtScreen() {
       <div className="flex justify-center pb-12 pt-8">
         <button
           type="button"
+          onClick={handleSave}
           className="
             font-sans text-sm tracking-widest
             text-stone-400
