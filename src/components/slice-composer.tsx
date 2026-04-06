@@ -6,6 +6,11 @@ import type { Slice } from "@/lib/types";
 
 type Mode = "quote" | "reflection";
 
+function haptic(style: "light" | "medium") {
+  if (typeof navigator === "undefined" || !navigator.vibrate) return;
+  navigator.vibrate(style === "light" ? 10 : 20);
+}
+
 export function SliceComposer({
   bookId,
   activeQuoteId,
@@ -32,6 +37,7 @@ export function SliceComposer({
 
   useEffect(() => {
     if (expanded) {
+      haptic("light");
       requestAnimationFrame(() => textareaRef.current?.focus());
     }
   }, [expanded]);
@@ -54,6 +60,7 @@ export function SliceComposer({
       quoteId: mode === "reflection" && activeQuoteId ? activeQuoteId : undefined,
     });
 
+    haptic("medium");
     setBody("");
     setReference("");
 
