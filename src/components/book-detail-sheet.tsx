@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import {
   Sheet,
   SheetContent,
@@ -60,13 +59,15 @@ function DetailContent({ book }: { book: Book }) {
       </div>
 
       <div className="flex gap-5 mb-8">
-        <Image
-          src={book.coverUrl}
-          alt={`${book.title} 書影`}
-          width={80}
-          height={120}
-          className="object-contain flex-shrink-0"
-        />
+        {book.coverUrl ? (
+          <img
+            src={book.coverUrl}
+            alt={`${book.title} 書影`}
+            className="w-20 h-28 object-contain flex-shrink-0"
+          />
+        ) : (
+          <div className="w-20 h-28 bg-stone-200 flex-shrink-0" />
+        )}
         <div className="flex flex-col justify-center">
           <h2 className="font-sans text-lg font-bold text-stone-800">
             {book.title}

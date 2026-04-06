@@ -24,7 +24,7 @@ export async function searchOpenBD(isbn: string): Promise<BookCandidate | null> 
       googleBooksId: `openbd-${isbn}`,
       title: s.title!,
       author: s.author ?? "",
-      coverUrl: s.cover || undefined,
+      coverUrl: s.cover?.replace("http://", "https://") || undefined,
     };
   } catch {
     return null;
