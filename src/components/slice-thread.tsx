@@ -1,16 +1,33 @@
 import type { Slice } from "@/lib/types";
 
-function QuoteBlock({ slice }: { slice: Slice }) {
+function QuoteBlock({
+  slice,
+  onAddReflection,
+}: {
+  slice: Slice;
+  onAddReflection: () => void;
+}) {
   return (
     <div className="border-l-2 border-stone-200 pl-6">
       <p className="font-serif text-stone-600 text-sm leading-relaxed italic">
         {slice.body}
       </p>
-      {slice.reference && (
-        <span className="font-sans text-stone-400 text-xs tracking-widest mt-2 block">
-          {slice.reference}
-        </span>
-      )}
+      <div className="flex items-center justify-between mt-2">
+        {slice.reference ? (
+          <span className="font-sans text-stone-400 text-xs tracking-widest">
+            {slice.reference}
+          </span>
+        ) : (
+          <span />
+        )}
+        <button
+          type="button"
+          onClick={onAddReflection}
+          className="font-sans text-xs tracking-widest text-stone-300 active:text-stone-500 transition-colors"
+        >
+          + 内省
+        </button>
+      </div>
     </div>
   );
 }
@@ -61,9 +78,6 @@ function buildThreads(slices: Slice[]): ThreadItem[] {
     (s) => s.type === "reflection" && !s.quoteId
   );
 
-  const items: ThreadItem[] = [];
-
-  // すべてのエントリをcreatedAt順で並べつつ、引用スレッドはquoteのcreatedAtで配置
   const quoteThreads = quotes.map((q) => ({
     kind: "quote-thread" as const,
     quote: q,
@@ -82,26 +96,22 @@ function buildThreads(slices: Slice[]): ThreadItem[] {
     sortKey: new Date(s.createdAt).getTime(),
   }));
 
-  const merged = [...quoteThreads, ...standalones].sort(
-    (a, b) => a.sortKey - b.sortKey
-  );
-
-  for (const item of merged) {
-    if (item.kind === "quote-thread") {
-      items.push({
-        kind: "quote-thread",
-        quote: item.quote,
-        reflections: item.reflections,
-      });
-    } else {
-      items.push({ kind: "standalone", slice: item.slice });
-    }
-  }
-
-  return items;
+  return [...quoteThreads, ...standalones]
+    .sort((a, b) => a.sortKey - b.sortKey)
+    .map((item) =>
+      item.kind === "quote-thread"
+        ? { kind: "quote-thread", quote: item.quote, reflections: item.reflections }
+        : { kind: "standalone", slice: item.slice }
+    );
 }
 
-export function SliceThread({ slices }: { slices: Slice[] }) {
+export function SliceThread({
+  slices,
+  onReplyToQuote,
+}: {
+  slices: Slice[];
+  onReplyToQuote?: (quoteId: string) => void;
+}) {
   const threads = buildThreads(slices);
 
   return (
@@ -110,7 +120,10 @@ export function SliceThread({ slices }: { slices: Slice[] }) {
         if (item.kind === "quote-thread") {
           return (
             <div key={item.quote.id} className="space-y-6">
-              <QuoteBlock slice={item.quote} />
+              <QuoteBlock
+                slice={item.quote}
+                onAddReflection={() => onReplyToQuote?.(item.quote.id)}
+              />
               {item.reflections.map((r) => (
                 <NestedReflectionBlock key={r.id} slice={r} />
               ))}

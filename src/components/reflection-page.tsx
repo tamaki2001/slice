@@ -28,7 +28,6 @@ export function ReflectionPage({
       };
       setSlices((prev) => [...prev, newSlice]);
 
-      // 引用を保存した場合、その引用IDを内省の紐付け先としてセット
       if (data.type === "quote") {
         setActiveQuoteId(newSlice.id);
       }
@@ -37,6 +36,10 @@ export function ReflectionPage({
     },
     []
   );
+
+  const handleReplyToQuote = useCallback((quoteId: string) => {
+    setActiveQuoteId(quoteId);
+  }, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -47,7 +50,7 @@ export function ReflectionPage({
       <BookMiniHeader book={book} onInfoTap={() => setDetailOpen(true)} />
 
       <main className="flex-1 overflow-y-auto">
-        <SliceThread slices={slices} />
+        <SliceThread slices={slices} onReplyToQuote={handleReplyToQuote} />
         <div ref={bottomRef} />
       </main>
 
