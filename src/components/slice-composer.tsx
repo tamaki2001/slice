@@ -43,7 +43,7 @@ export function SliceComposer({
       type: mode,
       body: trimmed,
       reference: mode === "quote" && reference.trim() ? reference.trim() : undefined,
-      quoteId: mode === "reflection" ? activeQuoteId : undefined,
+      quoteId: mode === "reflection" && activeQuoteId ? activeQuoteId : undefined,
     });
 
     setBody("");
