@@ -9,11 +9,14 @@ type Mode = "quote" | "reflection";
 export function SliceComposer({
   bookId,
   activeQuoteId,
+  expanded,
+  onExpandChange,
   onSubmit,
 }: {
   bookId: string;
-  /** 直前に保存された引用のID（内省モード自動遷移時に付与） */
   activeQuoteId?: string;
+  expanded: boolean;
+  onExpandChange: (open: boolean) => void;
   onSubmit: (slice: Omit<Slice, "id" | "createdAt">) => void;
 }) {
   const [mode, setMode] = useState<Mode>("quote");
@@ -21,12 +24,17 @@ export function SliceComposer({
   const [reference, setReference] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // activeQuoteIdが変化したら内省モードに遷移
   useEffect(() => {
     if (activeQuoteId) {
       setMode("reflection");
     }
   }, [activeQuoteId]);
+
+  useEffect(() => {
+    if (expanded) {
+      requestAnimationFrame(() => textareaRef.current?.focus());
+    }
+  }, [expanded]);
 
   useEffect(() => {
     if (!textareaRef.current) return;
@@ -59,6 +67,25 @@ export function SliceComposer({
     }
   };
 
+  if (!expanded) {
+    return (
+      <div
+        className="border-t border-stone-200 bg-background pb-[env(safe-area-inset-bottom,0.5rem)]"
+      >
+        <button
+          type="button"
+          onClick={() => onExpandChange(true)}
+          className="
+            w-full px-6 py-4 text-left
+            font-serif text-sm text-stone-300
+          "
+        >
+          思考を記録する...
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="border-t border-stone-200 bg-background pb-[env(safe-area-inset-bottom,0.5rem)]">
       {/* モード切替 */}
@@ -84,6 +111,15 @@ export function SliceComposer({
               value={body}
               onChange={(e) => setBody(e.target.value)}
               onKeyDown={handleKeyDown}
+              onBlur={() => {
+                if (!body.trim()) {
+                  // テキストが空のときフォーカスを外したら折りたたむ
+                  // 少し遅延させてボタンクリックが先に処理されるようにする
+                  setTimeout(() => {
+                    if (!body.trim()) onExpandChange(false);
+                  }, 200);
+                }
+              }}
               placeholder={
                 mode === "quote"
                   ? "本文を引用..."
@@ -99,7 +135,6 @@ export function SliceComposer({
               "
             />
 
-            {/* 引用モード: ページ番号 + OCRボタン */}
             {mode === "quote" && (
               <div className="flex items-center gap-3 mt-1">
                 <input
@@ -127,7 +162,6 @@ export function SliceComposer({
             )}
           </div>
 
-          {/* 送信ボタン */}
           <button
             type="button"
             onClick={handleSubmit}

@@ -17,6 +17,7 @@ export function ReflectionPage({
   const [detailOpen, setDetailOpen] = useState(false);
   const [slices, setSlices] = useState(initialSlices);
   const [activeQuoteId, setActiveQuoteId] = useState<string | undefined>();
+  const [composerOpen, setComposerOpen] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const handleSubmit = useCallback(
@@ -43,17 +44,30 @@ export function ReflectionPage({
       if (!target) return prev;
 
       if (target.type === "quote") {
-        // 引用を削除→紐づく内省もカスケード削除
-        return prev.filter((s) => s.id !== sliceId && s.quoteId !== sliceId);
+        // ON DELETE SET NULL: 引用を削除、紐づく内省はquoteIdをnullに
+        return prev
+          .filter((s) => s.id !== sliceId)
+          .map((s) =>
+            s.quoteId === sliceId ? { ...s, quoteId: undefined } : s
+          );
       }
       return prev.filter((s) => s.id !== sliceId);
     });
 
-    // TODO: Supabase削除（DBはON DELETE CASCADEで自動カスケード）
+    // TODO: Supabase削除（DBはON DELETE SET NULLで自動処理）
+  }, []);
+
+  const handleEdit = useCallback((sliceId: string, body: string) => {
+    setSlices((prev) =>
+      prev.map((s) => (s.id === sliceId ? { ...s, body } : s))
+    );
+
+    // TODO: Supabase更新
   }, []);
 
   const handleReplyToQuote = useCallback((quoteId: string) => {
     setActiveQuoteId(quoteId);
+    setComposerOpen(true);
   }, []);
 
   useEffect(() => {
@@ -69,6 +83,7 @@ export function ReflectionPage({
           slices={slices}
           onReplyToQuote={handleReplyToQuote}
           onDelete={handleDelete}
+          onEdit={handleEdit}
         />
         <div ref={bottomRef} />
       </main>
@@ -76,6 +91,8 @@ export function ReflectionPage({
       <SliceComposer
         bookId={book.id}
         activeQuoteId={activeQuoteId}
+        expanded={composerOpen}
+        onExpandChange={setComposerOpen}
         onSubmit={handleSubmit}
       />
 
