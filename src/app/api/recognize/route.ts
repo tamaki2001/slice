@@ -65,25 +65,53 @@ export async function POST(req: NextRequest) {
 
     const data = await res.json();
 
-    // gemini-2.5-flashはthinkingモデル。parts全体からテキストを結合
+    // gemini-2.5-flashはthinkingモデル。thought=trueを除外して応答テキストのみ結合
     const parts = data.candidates?.[0]?.content?.parts ?? [];
-    const allText = parts
-      .filter((p: Record<string, unknown>) => typeof p.text === "string")
-      .map((p: Record<string, unknown>) => p.text as string)
-      .join("\n");
 
-    console.log("[recognize] Gemini raw:", allText.slice(0, 500));
+    // 応答パート（thought除外）
+    const responseParts = parts
+      .filter((p: Record<string, unknown>) => typeof p.text === "string" && !p.thought)
+      .map((p: Record<string, unknown>) => p.text as string);
 
-    // JSONブロック抽出
-    const cleaned = allText
+    // 応答パートが空ならthinking含め全体から
+    const textSource = responseParts.length > 0
+      ? responseParts.join("\n")
+      : parts
+          .filter((p: Record<string, unknown>) => typeof p.text === "string")
+          .map((p: Record<string, unknown>) => p.text as string)
+          .join("\n");
+
+    console.log("[recognize] Gemini parts count:", parts.length, "response parts:", responseParts.length);
+    console.log("[recognize] Gemini text:", textSource.slice(0, 800));
+
+    // JSONブロック抽出（マークダウンコードブロック除去）
+    const cleaned = textSource
       .replace(/```json\s*/gi, "")
       .replace(/```\s*/g, "")
       .trim();
 
-    const match = cleaned.match(/\{[^{}]*"title"[^{}]*\}/);
+    // 複数行JSONにも対応
+    const match = cleaned.match(/\{[\s\S]*?"title"\s*:\s*"[\s\S]*?\}/);
+
     if (!match) {
-      console.log("[recognize] JSON抽出失敗。応答:", allText.slice(0, 200));
-      return NextResponse.json({ title: "", author: "", isbn: "", raw: allText.slice(0, 200) });
+      // フォールバック: テキストから直接タイトルっぽい文字列を抽出
+      const titleMatch = textSource.match(/"title"\s*:\s*"([^"]+)"/);
+      const authorMatch = textSource.match(/"author"\s*:\s*"([^"]+)"/);
+      if (titleMatch) {
+        const result = {
+          title: titleMatch[1].trim(),
+          author: authorMatch?.[1]?.trim() ?? "",
+          isbn: "",
+        };
+        console.log("[recognize] regex fallback:", result);
+        return NextResponse.json(result);
+      }
+      console.log("[recognize] JSON抽出完全失敗");
+      return NextResponse.json({ title: "", author: "", isbn: "", raw: textSource.slice(0, 300) });
+    }
+    if (!match) {
+      console.log("[recognize] JSON抽出失敗。応答:", textSource.slice(0, 200));
+      return NextResponse.json({ title: "", author: "", isbn: "", raw: textSource.slice(0, 200) });
     }
 
     try {
