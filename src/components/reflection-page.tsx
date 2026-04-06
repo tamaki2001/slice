@@ -1,27 +1,51 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import type { Book, Slice } from "@/lib/types";
 import { BookMiniHeader } from "./book-mini-header";
 import { SliceThread } from "./slice-thread";
+import { SliceComposer } from "./slice-composer";
 import { BookDetailSheet } from "./book-detail-sheet";
 
 export function ReflectionPage({
   book,
-  slices,
+  slices: initialSlices,
 }: {
   book: Book;
   slices: Slice[];
 }) {
   const [detailOpen, setDetailOpen] = useState(false);
+  const [slices, setSlices] = useState(initialSlices);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  const handleSubmit = useCallback(
+    (data: Omit<Slice, "id" | "createdAt">) => {
+      const newSlice: Slice = {
+        ...data,
+        id: crypto.randomUUID(),
+        createdAt: new Date().toISOString(),
+      };
+      setSlices((prev) => [...prev, newSlice]);
+
+      // TODO: Supabase永続化
+    },
+    []
+  );
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [slices.length]);
 
   return (
-    <div className="min-h-full bg-background flex flex-col">
+    <div className="h-full bg-background flex flex-col">
       <BookMiniHeader book={book} onInfoTap={() => setDetailOpen(true)} />
 
-      <main className="flex-1 pb-20">
+      <main className="flex-1 overflow-y-auto">
         <SliceThread slices={slices} />
+        <div ref={bottomRef} />
       </main>
+
+      <SliceComposer bookId={book.id} onSubmit={handleSubmit} />
 
       <BookDetailSheet
         book={book}
