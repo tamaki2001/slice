@@ -60,17 +60,33 @@ export async function POST(req: NextRequest) {
     const content =
       data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
 
-    const match = content.match(/\{[\s\S]*?\}/);
+    console.log("[recognize] Gemini raw:", content);
+
+    // JSONブロック抽出（```json...```やマークダウンコードブロック対応）
+    const cleaned = content
+      .replace(/```json\s*/gi, "")
+      .replace(/```\s*/g, "")
+      .trim();
+
+    const match = cleaned.match(/\{[\s\S]*\}/);
     if (!match) {
+      console.log("[recognize] JSON抽出失敗");
       return NextResponse.json({ title: "", author: "", isbn: "" });
     }
 
-    const parsed = JSON.parse(match[0]);
-    return NextResponse.json({
-      title: parsed.title ?? "",
-      author: parsed.author ?? "",
-      isbn: parsed.isbn ?? "",
-    });
+    try {
+      const parsed = JSON.parse(match[0]);
+      const result = {
+        title: String(parsed.title ?? "").trim(),
+        author: String(parsed.author ?? "").trim(),
+        isbn: String(parsed.isbn ?? parsed.ISBN ?? "").replace(/\D/g, ""),
+      };
+      console.log("[recognize] parsed:", result);
+      return NextResponse.json(result);
+    } catch (parseErr) {
+      console.log("[recognize] JSONパース失敗:", parseErr, match[0]);
+      return NextResponse.json({ title: "", author: "", isbn: "" });
+    }
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "認識に失敗しました" },

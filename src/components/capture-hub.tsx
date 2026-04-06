@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { searchGoogleBooks, searchGoogleBooksByISBN } from "@/lib/google-books";
+import { searchOpenBD } from "@/lib/openbd";
 import { createBook } from "@/lib/db";
 import { captureFrameAsBase64 } from "@/lib/ocr";
 import { startBarcodeScanner } from "@/lib/barcode";
@@ -24,6 +25,7 @@ export function CaptureHub() {
   const [stepLabel, setStepLabel] = useState(STEPS[0]);
   const [candidates, setCandidates] = useState<BookCandidate[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debugLog, setDebugLog] = useState<string[]>([]);
   const [cameraReady, setCameraReady] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -31,7 +33,11 @@ export function CaptureHub() {
   const barcodeFoundRef = useRef(false);
   const barcodeCallbackRef = useRef<(isbn: string) => void>(() => {});
 
-  // カメラ自動起動
+  const log = useCallback((msg: string) => {
+    console.log(`[capture] ${msg}`);
+    setDebugLog((prev) => [...prev.slice(-4), msg]);
+  }, []);
+
   useEffect(() => {
     startCamera();
     return () => stopCamera();
@@ -54,10 +60,11 @@ export function CaptureHub() {
           (isbn) => barcodeCallbackRef.current(isbn)
         );
       }
-    } catch {
+    } catch (e) {
+      log(`カメラ起動失敗: ${e}`);
       setPhase("manual");
     }
-  }, []);
+  }, [log]);
 
   const stopCamera = useCallback(() => {
     scannerRef.current?.stop();
@@ -67,34 +74,74 @@ export function CaptureHub() {
     setCameraReady(false);
   }, []);
 
-  const showResults = useCallback((results: BookCandidate[]) => {
-    setCandidates(results);
-    setPhase(results.length > 0 ? "candidates" : "manual");
-  }, []);
+  // ── ISBN → 書籍検索（OpenBD優先） ──
+  const searchByISBN = useCallback(
+    async (isbn: string): Promise<BookCandidate[]> => {
+      // 1. OpenBD
+      log(`OpenBD検索: ${isbn}`);
+      const openbd = await searchOpenBD(isbn);
+      if (openbd) {
+        log(`OpenBDヒット: ${openbd.title}`);
+        return [openbd];
+      }
+      log("OpenBD: 該当なし");
 
-  // ── ①バーコード検知（最速ルート） ──
-  // refを常に最新のコールバックに更新
+      // 2. Google Books (ISBN)
+      log(`Google Books ISBN検索: ${isbn}`);
+      const gbIsbn = await searchGoogleBooksByISBN(isbn);
+      if (gbIsbn.length > 0) {
+        log(`Google Booksヒット: ${gbIsbn.length}件`);
+        return gbIsbn;
+      }
+      log("Google Books ISBN: 該当なし");
+
+      return [];
+    },
+    [log]
+  );
+
+  const showResults = useCallback(
+    (results: BookCandidate[], fallbackQuery?: string) => {
+      setCandidates(results);
+      if (results.length > 0) {
+        setPhase("candidates");
+      } else {
+        if (fallbackQuery) setSearchQuery(fallbackQuery);
+        setPhase("manual");
+      }
+    },
+    []
+  );
+
+  // ── ①バーコード検知 ──
   const handleBarcodeDetect = useCallback(
     async (isbn: string) => {
       if (barcodeFoundRef.current) return;
       barcodeFoundRef.current = true;
 
+      log(`バーコード検知: ${isbn}`);
       stopCamera();
       setPhase("analyzing");
       setStepLabel(STEPS[0]);
 
       try {
-        setStepLabel(STEPS[2]);
-        const results = await searchGoogleBooksByISBN(isbn);
-        showResults(results);
-      } catch {
-        showResults([]);
+        const results = await searchByISBN(isbn);
+        if (results.length > 0) {
+          showResults(results);
+          return;
+        }
+
+        // ISBN検索全滅→タイトル検索のフォールバック用にISBNを渡す
+        log("ISBN検索全滅→手動入力へ");
+        showResults([], isbn);
+      } catch (e) {
+        log(`検索エラー: ${e}`);
+        showResults([], isbn);
       }
     },
-    [stopCamera, showResults]
+    [stopCamera, searchByISBN, showResults, log]
   );
 
-  // refを常に最新に
   useEffect(() => {
     barcodeCallbackRef.current = handleBarcodeDetect;
   }, [handleBarcodeDetect]);
@@ -107,8 +154,10 @@ export function CaptureHub() {
     stopCamera();
     setPhase("analyzing");
     setStepLabel(STEPS[1]);
+    log("Gemini画像解析を開始");
 
-    // Geminiサーバー側画像認識
+    let geminiTitle = "";
+
     try {
       const res = await fetch("/api/recognize", {
         method: "POST",
@@ -117,12 +166,15 @@ export function CaptureHub() {
       });
 
       if (res.ok) {
-        const { title, author, isbn } = await res.json();
+        const data = await res.json();
+        const { title, author, isbn } = data;
+        log(`Gemini応答: title="${title}" author="${author}" isbn="${isbn}"`);
+        geminiTitle = title || "";
 
-        // ISBNがあればISBN検索優先
+        // ISBNがあればISBN検索
         if (isbn && /^97[89]/.test(isbn)) {
           setStepLabel(STEPS[2]);
-          const results = await searchGoogleBooksByISBN(isbn);
+          const results = await searchByISBN(isbn);
           if (results.length > 0) {
             showResults(results);
             return;
@@ -132,20 +184,26 @@ export function CaptureHub() {
         // タイトル/著者で検索
         const query = [title, author].filter(Boolean).join(" ");
         if (query.length > 1) {
+          log(`タイトル検索: "${query}"`);
           setStepLabel(STEPS[2]);
           const results = await searchGoogleBooks(query);
           if (results.length > 0) {
+            log(`タイトル検索ヒット: ${results.length}件`);
             showResults(results);
             return;
           }
+          log("タイトル検索: 該当なし");
         }
+      } else {
+        const err = await res.text();
+        log(`Gemini APIエラー: ${err}`);
       }
-    } catch {
-      // Gemini失敗
+    } catch (e) {
+      log(`Gemini呼び出し失敗: ${e}`);
     }
 
-    showResults([]);
-  }, [stopCamera, showResults]);
+    showResults([], geminiTitle);
+  }, [stopCamera, searchByISBN, showResults, log]);
 
   // ── 手動検索 ──
   const handleManualSearch = useCallback(async () => {
@@ -154,14 +212,17 @@ export function CaptureHub() {
 
     setPhase("analyzing");
     setStepLabel(STEPS[2]);
+    log(`手動検索: "${query}"`);
 
     try {
       const results = await searchGoogleBooks(query);
-      showResults(results);
-    } catch {
-      showResults([]);
+      log(`検索結果: ${results.length}件`);
+      showResults(results, query);
+    } catch (e) {
+      log(`検索エラー: ${e}`);
+      showResults([], query);
     }
-  }, [searchQuery, showResults]);
+  }, [searchQuery, showResults, log]);
 
   // ── 書籍選択 ──
   const handleSelectExisting = useCallback(
@@ -190,6 +251,7 @@ export function CaptureHub() {
     setPhase("camera");
     setCandidates([]);
     setSearchQuery("");
+    setDebugLog([]);
     barcodeFoundRef.current = false;
     startCamera();
   }, [startCamera]);
@@ -218,11 +280,9 @@ export function CaptureHub() {
               muted
               className="w-full h-full object-cover"
             />
-            {/* バーコード読み取り枠ガイド */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className="w-3/4 h-16 border border-stone-400/40 rounded-sm" />
             </div>
-            {/* ヒント */}
             <div className="absolute bottom-4 inset-x-0 text-center pointer-events-none">
               <span className="font-sans text-xs tracking-widest text-stone-100/70 bg-stone-800/30 px-3 py-1">
                 バーコードまたは表紙をかざす
@@ -230,7 +290,6 @@ export function CaptureHub() {
             </div>
           </div>
 
-          {/* シャッターボタン */}
           <div className="flex justify-center">
             <button
               type="button"
@@ -271,7 +330,9 @@ export function CaptureHub() {
       {phase === "manual" && (
         <div className="flex-1 flex flex-col px-8 gap-6 pt-8">
           <p className="font-serif text-sm text-stone-400 leading-relaxed">
-            自動認識できませんでした。タイトルを入力してください。
+            {searchQuery
+              ? "候補が見つかりませんでした。タイトルを修正して再検索できます。"
+              : "タイトルを入力してください。"}
           </p>
           <input
             type="text"
@@ -310,6 +371,17 @@ export function CaptureHub() {
           >
             もう一度撮影する
           </button>
+
+          {/* デバッグログ */}
+          {debugLog.length > 0 && (
+            <div className="mt-4 space-y-0.5">
+              {debugLog.map((msg, i) => (
+                <p key={i} className="font-mono text-[10px] text-stone-300 leading-tight">
+                  {msg}
+                </p>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
