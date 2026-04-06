@@ -16,5 +16,7 @@ export type Slice = {
   body: string;
   /** 引用時のページ番号等 */
   reference?: string;
+  /** 内省が紐づく引用のID */
+  quoteId?: string;
   createdAt: string;
 };

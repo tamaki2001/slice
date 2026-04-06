@@ -8,15 +8,25 @@ type Mode = "quote" | "reflection";
 
 export function SliceComposer({
   bookId,
+  activeQuoteId,
   onSubmit,
 }: {
   bookId: string;
+  /** 直前に保存された引用のID（内省モード自動遷移時に付与） */
+  activeQuoteId?: string;
   onSubmit: (slice: Omit<Slice, "id" | "createdAt">) => void;
 }) {
   const [mode, setMode] = useState<Mode>("quote");
   const [body, setBody] = useState("");
   const [reference, setReference] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // activeQuoteIdが変化したら内省モードに遷移
+  useEffect(() => {
+    if (activeQuoteId) {
+      setMode("reflection");
+    }
+  }, [activeQuoteId]);
 
   useEffect(() => {
     if (!textareaRef.current) return;
@@ -33,19 +43,14 @@ export function SliceComposer({
       type: mode,
       body: trimmed,
       reference: mode === "quote" && reference.trim() ? reference.trim() : undefined,
+      quoteId: mode === "reflection" ? activeQuoteId : undefined,
     });
 
     setBody("");
     setReference("");
 
-    // 引用を保存した後、内省モードに自動遷移
-    if (mode === "quote") {
-      setMode("reflection");
-    }
-
-    // フォーカスを維持
     requestAnimationFrame(() => textareaRef.current?.focus());
-  }, [body, reference, mode, bookId, onSubmit]);
+  }, [body, reference, mode, bookId, activeQuoteId, onSubmit]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {

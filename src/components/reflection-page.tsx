@@ -16,6 +16,7 @@ export function ReflectionPage({
 }) {
   const [detailOpen, setDetailOpen] = useState(false);
   const [slices, setSlices] = useState(initialSlices);
+  const [activeQuoteId, setActiveQuoteId] = useState<string | undefined>();
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const handleSubmit = useCallback(
@@ -26,6 +27,11 @@ export function ReflectionPage({
         createdAt: new Date().toISOString(),
       };
       setSlices((prev) => [...prev, newSlice]);
+
+      // 引用を保存した場合、その引用IDを内省の紐付け先としてセット
+      if (data.type === "quote") {
+        setActiveQuoteId(newSlice.id);
+      }
 
       // TODO: Supabase永続化
     },
@@ -45,7 +51,11 @@ export function ReflectionPage({
         <div ref={bottomRef} />
       </main>
 
-      <SliceComposer bookId={book.id} onSubmit={handleSubmit} />
+      <SliceComposer
+        bookId={book.id}
+        activeQuoteId={activeQuoteId}
+        onSubmit={handleSubmit}
+      />
 
       <BookDetailSheet
         book={book}
