@@ -21,7 +21,10 @@ export function ReflectionPage({
   const [composerOpen, setComposerOpen] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [scrolling, setScrolling] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
+  const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     setSlices(initialSlices);
@@ -181,9 +184,18 @@ export function ReflectionPage({
         </div>
       )}
 
-      <main className="flex-1 overflow-y-auto">
+      <main
+        ref={mainRef}
+        className="flex-1 overflow-y-auto"
+        onScroll={() => {
+          setScrolling(true);
+          if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
+          scrollTimerRef.current = setTimeout(() => setScrolling(false), 2000);
+        }}
+      >
         <SliceThread
           slices={slices}
+          scrolling={scrolling}
           onReplyToQuote={handleReplyToQuote}
           onDelete={handleDelete}
           onEdit={handleEdit}

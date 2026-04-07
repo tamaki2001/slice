@@ -269,33 +269,18 @@ function buildThreads(slices: Slice[]): ThreadItem[] {
 
 export function SliceThread({
   slices,
+  scrolling = false,
   onReplyToQuote,
   onDelete,
   onEdit,
 }: {
   slices: Slice[];
+  scrolling?: boolean;
   onReplyToQuote?: (quoteId: string) => void;
   onDelete?: (sliceId: string) => void;
   onEdit?: (sliceId: string, body: string) => void;
 }) {
   const threads = buildThreads(slices);
-
-  // スクロール検知
-  const [scrolling, setScrolling] = useState(false);
-  const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrolling(true);
-      if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
-      scrollTimerRef.current = setTimeout(() => setScrolling(false), 2000);
-    };
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
-    };
-  }, []);
 
   const [deleteTarget, setDeleteTarget] = useState<{
     id: string;
