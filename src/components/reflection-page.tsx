@@ -147,6 +147,15 @@ export function ReflectionPage({
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [slices.length]);
 
+  // Composer展開時に末尾にスクロール（既存の思索が隠れないように）
+  useEffect(() => {
+    if (composerOpen) {
+      setTimeout(() => {
+        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
+    }
+  }, [composerOpen]);
+
   return (
     <div className="h-full bg-background flex flex-col relative">
       {/* スワイプガイド */}
