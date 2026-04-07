@@ -147,14 +147,17 @@ export function ReflectionPage({
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [slices.length]);
 
-  // Composer展開時に末尾にスクロール（既存の思索が隠れないように）
+  // Composer展開時・フォーカス時に末尾へスクロール
+  // モバイルのキーボード表示に時間がかかるため複数回実行
   useEffect(() => {
-    if (composerOpen) {
-      setTimeout(() => {
-        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-      }, 100);
+    if (composerOpen || focusMode) {
+      const scroll = () => bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+      scroll();
+      const t1 = setTimeout(scroll, 200);
+      const t2 = setTimeout(scroll, 500);
+      return () => { clearTimeout(t1); clearTimeout(t2); };
     }
-  }, [composerOpen]);
+  }, [composerOpen, focusMode]);
 
   return (
     <div className="h-full bg-background flex flex-col relative">
