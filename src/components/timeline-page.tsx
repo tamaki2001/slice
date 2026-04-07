@@ -6,7 +6,9 @@ import { useRouter } from "next/navigation";
 import { Camera, Trash2 } from "lucide-react";
 import { deleteBook } from "@/lib/db";
 import { DeleteSliceDialog } from "./delete-slice-dialog";
-import type { BookWithPreview } from "@/lib/types";
+import type { BookWithPreview, TimelineEntry } from "@/lib/types";
+
+const SESSION_GAP_MS = 6 * 60 * 60 * 1000; // 6時間
 
 function formatTime(iso: string): string {
   const now = Date.now();
@@ -30,108 +32,58 @@ function formatTime(iso: string): string {
   return `${y}/${mo}/${da}`;
 }
 
-function BookRow({
-  book,
-  onLongPress,
-  scrolling,
+function shouldShowHeader(
+  entry: TimelineEntry,
+  prevEntry: TimelineEntry | null
+): boolean {
+  if (!prevEntry) return true;
+  // ケースC: 異なる書籍
+  if (entry.book.id !== prevEntry.book.id) return true;
+  // ケースB: 同一書籍だが6時間以上経過
+  const gap =
+    new Date(prevEntry.slice.createdAt).getTime() -
+    new Date(entry.slice.createdAt).getTime();
+  if (Math.abs(gap) >= SESSION_GAP_MS) return true;
+  // ケースA: 連続した投稿
+  return false;
+}
+
+/* ── BookHeader（削除ボタン付き） ── */
+
+function BookHeader({
+  entry,
+  onDelete,
 }: {
-  book: BookWithPreview;
-  onLongPress: () => void;
-  scrolling: boolean;
+  entry: TimelineEntry;
+  onDelete: () => void;
 }) {
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const movedRef = useRef(false);
-  const triggeredRef = useRef(false);
-
-  const startPress = () => {
-    movedRef.current = false;
-    triggeredRef.current = false;
-    timerRef.current = setTimeout(() => {
-      if (!movedRef.current) {
-        triggeredRef.current = true;
-        onLongPress();
-      }
-    }, 600);
-  };
-
-  const endPress = () => {
-    if (timerRef.current) clearTimeout(timerRef.current);
-  };
-
-  const ts = book.latestSlice?.createdAt;
-
   return (
-    <div className="group relative">
-      <Link
-        href={`/book/${book.id}`}
-        className="block px-8 py-8"
-        onTouchStart={startPress}
-        onTouchEnd={(e) => {
-          endPress();
-          if (triggeredRef.current) e.preventDefault();
-        }}
-        onTouchMove={() => { movedRef.current = true; }}
-        onContextMenu={(e) => e.preventDefault()}
-        onMouseDown={startPress}
-        onMouseUp={endPress}
-        onMouseLeave={endPress}
-      >
-        <div className="flex items-start gap-5">
-          {book.coverUrl ? (
-            <img
-              src={book.coverUrl}
-              alt=""
-              className="w-12 h-18 object-contain flex-shrink-0 opacity-80"
-              referrerPolicy="no-referrer"
-            />
-          ) : (
-            <div className="w-12 h-18 bg-stone-200 flex-shrink-0" />
-          )}
-          <div className="flex-1 min-w-0">
-            <h2 className="font-sans text-lg font-medium text-stone-800">
-              {book.title}
-            </h2>
-            <span className="font-sans text-xs tracking-widest text-stone-500 block mt-0.5">
-              {book.author}
-            </span>
-            {book.latestSlice && (
-              <p className="font-serif text-sm text-stone-500 leading-relaxed mt-3 line-clamp-2">
-                {book.latestSlice.body}
-              </p>
-            )}
-            <div className="flex items-center gap-3 mt-2">
-              {book.sliceCount > 0 && (
-                <span className="font-sans text-xs tracking-widest text-stone-400">
-                  {book.sliceCount}件
-                </span>
-              )}
-            </div>
-          </div>
+    <div className="group flex items-start gap-5 px-8 pt-8 pb-2 relative">
+      <Link href={`/book/${entry.book.id}`} className="flex items-start gap-5 flex-1">
+        {entry.book.coverUrl ? (
+          <img
+            src={entry.book.coverUrl}
+            alt=""
+            className="w-12 h-18 object-contain flex-shrink-0 opacity-80"
+            referrerPolicy="no-referrer"
+          />
+        ) : (
+          <div className="w-12 h-18 bg-stone-200 flex-shrink-0" />
+        )}
+        <div className="flex-1 min-w-0">
+          <h2 className="font-sans text-lg font-medium text-stone-800">
+            {entry.book.title}
+          </h2>
+          <span className="font-sans text-xs tracking-widest text-stone-500 block mt-0.5">
+            {entry.book.author}
+          </span>
         </div>
       </Link>
 
-      {/* 隠された時間: PC=hover, Mobile=scroll中 */}
-      {ts && (
-        <span
-          className={`
-            absolute bottom-3 right-6
-            font-sans text-xs text-stone-300
-            transition-opacity duration-500
-            pointer-events-none
-            ${scrolling ? "opacity-40" : "opacity-0 group-hover:opacity-40"}
-          `}
-        >
-          {formatTime(ts)}
-        </span>
-      )}
-
-      {/* PC: ホバー時の削除ボタン */}
+      {/* PC: ホバー削除 */}
       <button
         type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          onLongPress();
-        }}
+        onClick={onDelete}
         aria-label="削除"
         className="
           absolute top-4 right-4
@@ -147,21 +99,60 @@ function BookRow({
   );
 }
 
-export function TimelinePage({ books: initialBooks }: { books: BookWithPreview[] }) {
+/* ── SliceRow ── */
+
+function SliceRow({
+  entry,
+  scrolling,
+}: {
+  entry: TimelineEntry;
+  scrolling: boolean;
+}) {
+  return (
+    <div className="group relative px-8 py-3">
+      <Link href={`/book/${entry.book.id}`} className="block">
+        <p className="font-serif text-sm text-stone-500 leading-relaxed line-clamp-3">
+          {entry.slice.body}
+        </p>
+      </Link>
+
+      {/* 隠された時間 */}
+      <span
+        className={`
+          absolute bottom-1 right-6
+          font-sans text-xs text-stone-300
+          transition-opacity duration-500
+          pointer-events-none
+          ${scrolling ? "opacity-40" : "opacity-0 group-hover:opacity-40"}
+        `}
+      >
+        {formatTime(entry.slice.createdAt)}
+      </span>
+    </div>
+  );
+}
+
+/* ── メインコンポーネント ── */
+
+export function TimelinePage({
+  feed,
+  books: initialBooks,
+}: {
+  feed: TimelineEntry[];
+  books: BookWithPreview[];
+}) {
   const router = useRouter();
   const [books, setBooks] = useState(initialBooks);
   const [deleteTarget, setDeleteTarget] = useState<BookWithPreview | null>(null);
   const [scrolling, setScrolling] = useState(false);
   const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // スクロール検知: スクロール中→true、停止3秒後→false
   useEffect(() => {
     const handleScroll = () => {
       setScrolling(true);
       if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
       scrollTimerRef.current = setTimeout(() => setScrolling(false), 3000);
     };
-
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => {
       window.removeEventListener("scroll", handleScroll);
@@ -182,26 +173,48 @@ export function TimelinePage({ books: initialBooks }: { books: BookWithPreview[]
     }
   }, [deleteTarget, initialBooks]);
 
+  const findBookPreview = (bookId: string) =>
+    books.find((b) => b.id === bookId);
+
+  const isEmpty = feed.length === 0;
+
   return (
     <div className="min-h-full bg-background relative">
-      <div className="pt-14 pb-32">
-        <div className="divide-y divide-stone-100">
-          {books.map((book) => (
-            <BookRow
-              key={book.id}
-              book={book}
-              scrolling={scrolling}
-              onLongPress={() => setDeleteTarget(book)}
-            />
-          ))}
-        </div>
-
-        {books.length === 0 && (
+      <div className="pt-10 pb-32">
+        {isEmpty ? (
           <div className="px-8 pt-32 text-center">
             <p className="font-serif text-lg text-stone-300">
               まだ本がありません
             </p>
           </div>
+        ) : (
+          feed.map((entry, i) => {
+            const prev = i > 0 ? feed[i - 1] : null;
+            const showHeader = shouldShowHeader(entry, prev);
+            const isContinuation = !showHeader;
+
+            return (
+              <div key={`${entry.book.id}-${entry.slice.createdAt}-${i}`}>
+                {showHeader && (
+                  <>
+                    {i > 0 && <div className="h-6" />}
+                    <BookHeader
+                      entry={entry}
+                      onDelete={() => {
+                        const bp = findBookPreview(entry.book.id);
+                        if (bp) setDeleteTarget(bp);
+                      }}
+                    />
+                  </>
+                )}
+
+                {/* ケースA: 連続投稿の左ボーダー */}
+                <div className={isContinuation ? "ml-8 border-l border-stone-100 pl-0" : ""}>
+                  <SliceRow entry={entry} scrolling={scrolling} />
+                </div>
+              </div>
+            );
+          })
         )}
       </div>
 

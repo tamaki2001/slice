@@ -1,5 +1,5 @@
 import { supabase } from "./supabase";
-import type { Book, BookWithPreview, Slice } from "./types";
+import type { Book, BookWithPreview, Slice, TimelineEntry } from "./types";
 
 // ── 型変換 ──
 
@@ -101,6 +101,44 @@ export async function fetchBooksWithPreview(): Promise<BookWithPreview[]> {
       const bTime = b.latestSlice ? new Date(b.latestSlice.createdAt).getTime() : 0;
       return bTime - aTime;
     });
+}
+
+export async function fetchTimelineFeed(): Promise<TimelineEntry[]> {
+  const { data: slices } = await supabase
+    .from("sl_slices")
+    .select("book_id, body, type, created_at")
+    .order("created_at", { ascending: false })
+    .limit(100);
+
+  if (!slices || slices.length === 0) return [];
+
+  const bookIds = [...new Set(slices.map((s) => (s as Record<string, unknown>).book_id as string))];
+  const { data: books } = await supabase
+    .from("sl_books")
+    .select("*")
+    .in("id", bookIds);
+
+  const bookMap = new Map<string, Book>();
+  for (const row of books ?? []) {
+    const b = toBook(row as Record<string, unknown>);
+    bookMap.set(b.id, b);
+  }
+
+  return slices
+    .map((s) => {
+      const r = s as Record<string, unknown>;
+      const book = bookMap.get(r.book_id as string);
+      if (!book) return null;
+      return {
+        book,
+        slice: {
+          body: r.body as string,
+          type: r.type as string,
+          createdAt: r.created_at as string,
+        },
+      };
+    })
+    .filter((e): e is TimelineEntry => e !== null);
 }
 
 export async function searchBooksByTitle(query: string): Promise<BookWithPreview[]> {

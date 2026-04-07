@@ -17,6 +17,11 @@ export type BookWithPreview = Book & {
   latestSlice?: { body: string; createdAt: string };
 };
 
+export type TimelineEntry = {
+  book: Book;
+  slice: { body: string; type: string; createdAt: string };
+};
+
 export type BookCandidate = {
   googleBooksId: string;
   title: string;
