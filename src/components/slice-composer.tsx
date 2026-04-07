@@ -15,12 +15,14 @@ export function SliceComposer({
   activeQuoteId,
   expanded,
   onExpandChange,
+  onFocusChange,
   onSubmit,
 }: {
   bookId: string;
   activeQuoteId?: string;
   expanded: boolean;
   onExpandChange: (open: boolean) => void;
+  onFocusChange?: (focused: boolean) => void;
   onSubmit: (slice: Omit<Slice, "id" | "createdAt">) => void;
 }) {
   const [reflection, setReflection] = useState("");
@@ -134,15 +136,21 @@ export function SliceComposer({
     [reflection]
   );
 
-  // ── 折りたたみ判定 ──
+  // ── フォーカスモード制御 ──
+  const handleFocus = useCallback(() => {
+    onFocusChange?.(true);
+  }, [onFocusChange]);
+
   const handleBlur = useCallback(() => {
     if (ocrLoading) return;
-    if (reflection.trim() || quote.trim()) return;
     setTimeout(() => {
-      if (composerRef.current?.contains(document.activeElement)) return;
-      if (!reflection.trim() && !quote.trim()) onExpandChange(false);
+      const stillInComposer = composerRef.current?.contains(document.activeElement);
+      if (!stillInComposer) {
+        onFocusChange?.(false);
+        if (!reflection.trim() && !quote.trim()) onExpandChange(false);
+      }
     }, 200);
-  }, [reflection, quote, ocrLoading, onExpandChange]);
+  }, [reflection, quote, ocrLoading, onExpandChange, onFocusChange]);
 
   if (!expanded) {
     return (
@@ -181,12 +189,13 @@ export function SliceComposer({
           value={reflection}
           onChange={(e) => setReflection(e.target.value)}
           onKeyDown={handleKeyDown}
+          onFocus={handleFocus}
           onBlur={handleBlur}
           placeholder="思索を書き留める..."
           rows={2}
           className="
             w-full resize-none bg-transparent
-            font-sans text-base leading-relaxed font-medium
+            font-serif text-base leading-relaxed
             text-stone-800 placeholder:text-stone-300
             focus:outline-none
           "
@@ -207,6 +216,7 @@ export function SliceComposer({
               value={quote}
               onChange={(e) => setQuote(e.target.value)}
               onKeyDown={handleKeyDown}
+              onFocus={handleFocus}
               onBlur={handleBlur}
               placeholder="冒頭の数語　末尾の数語"
               rows={1}

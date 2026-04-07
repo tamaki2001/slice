@@ -1,8 +1,11 @@
 "use client";
 
+import { useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Camera } from "lucide-react";
+import { deleteBook } from "@/lib/db";
+import { DeleteSliceDialog } from "./delete-slice-dialog";
 import type { BookWithPreview } from "@/lib/types";
 
 function relativeTime(iso: string): string {
@@ -17,21 +20,53 @@ function relativeTime(iso: string): string {
   return `${months}ヶ月前`;
 }
 
-function BookRow({ book }: { book: BookWithPreview }) {
+function BookRow({
+  book,
+  onLongPress,
+}: {
+  book: BookWithPreview;
+  onLongPress: () => void;
+}) {
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const movedRef = useRef(false);
+
+  const startPress = () => {
+    movedRef.current = false;
+    timerRef.current = setTimeout(() => {
+      if (!movedRef.current) {
+        onLongPress();
+      }
+    }, 600);
+  };
+
+  const endPress = () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+  };
+
   return (
-    <Link href={`/book/${book.id}`} className="block px-8 py-8">
+    <Link
+      href={`/book/${book.id}`}
+      className="block px-8 py-8"
+      onTouchStart={startPress}
+      onTouchEnd={endPress}
+      onTouchMove={() => { movedRef.current = true; }}
+      onMouseDown={startPress}
+      onMouseUp={endPress}
+      onMouseLeave={endPress}
+    >
       <div className="flex items-start gap-5">
         {book.coverUrl ? (
           <img
             src={book.coverUrl}
             alt=""
             className="w-12 h-18 object-contain flex-shrink-0 opacity-80"
+            referrerPolicy="no-referrer"
           />
         ) : (
           <div className="w-12 h-18 bg-stone-200 flex-shrink-0" />
         )}
         <div className="flex-1 min-w-0">
-          <h2 className="font-sans text-lg font-medium text-stone-800 truncate">
+          <h2 className="font-sans text-lg font-medium text-stone-800">
             {book.title}
           </h2>
           <span className="font-sans text-xs tracking-widest text-stone-500 block mt-0.5">
@@ -60,15 +95,35 @@ function BookRow({ book }: { book: BookWithPreview }) {
   );
 }
 
-export function TimelinePage({ books }: { books: BookWithPreview[] }) {
+export function TimelinePage({ books: initialBooks }: { books: BookWithPreview[] }) {
   const router = useRouter();
+  const [books, setBooks] = useState(initialBooks);
+  const [deleteTarget, setDeleteTarget] = useState<BookWithPreview | null>(null);
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (!deleteTarget) return;
+    const id = deleteTarget.id;
+    setBooks((prev) => prev.filter((b) => b.id !== id));
+    setDeleteTarget(null);
+
+    try {
+      await deleteBook(id);
+    } catch {
+      // ロールバック
+      setBooks(initialBooks);
+    }
+  }, [deleteTarget, initialBooks]);
 
   return (
     <div className="min-h-full bg-background relative">
       <div className="pt-14 pb-32">
         <div className="divide-y divide-stone-100">
           {books.map((book) => (
-            <BookRow key={book.id} book={book} />
+            <BookRow
+              key={book.id}
+              book={book}
+              onLongPress={() => setDeleteTarget(book)}
+            />
           ))}
         </div>
 
@@ -81,7 +136,7 @@ export function TimelinePage({ books }: { books: BookWithPreview[] }) {
         )}
       </div>
 
-      {/* FAB: 書影撮影 */}
+      {/* FAB */}
       <button
         type="button"
         onClick={() => router.push("/capture")}
@@ -97,6 +152,15 @@ export function TimelinePage({ books }: { books: BookWithPreview[] }) {
       >
         <Camera size={22} strokeWidth={1.5} />
       </button>
+
+      {/* 削除確認ダイアログ */}
+      <DeleteSliceDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}
+        isQuote={false}
+        childCount={deleteTarget?.sliceCount ?? 0}
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   );
 }

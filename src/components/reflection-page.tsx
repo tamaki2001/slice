@@ -20,18 +20,16 @@ export function ReflectionPage({
   const [slices, setSlices] = useState(initialSlices);
   const [activeQuoteId, setActiveQuoteId] = useState<string | undefined>();
   const [composerOpen, setComposerOpen] = useState(false);
+  const [focusMode, setFocusMode] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // initialSlicesが変わったら同期（ページ遷移時）
   useEffect(() => {
     setSlices(initialSlices);
   }, [initialSlices]);
 
-  // Realtime購読
   useRealtimeSlices(book.id, setSlices);
 
-  // エラー自動消去
   useEffect(() => {
     if (!error) return;
     const t = setTimeout(() => setError(null), 4000);
@@ -40,7 +38,6 @@ export function ReflectionPage({
 
   const handleSubmit = useCallback(
     async (data: Omit<Slice, "id" | "createdAt">) => {
-      // 楽観的アップデート用の仮ID
       const tempId = crypto.randomUUID();
       const tempSlice: Slice = {
         ...data,
@@ -55,16 +52,13 @@ export function ReflectionPage({
 
       try {
         const saved = await insertSlice(data);
-        // 仮IDを実IDに差し替え
         setSlices((prev) =>
           prev.map((s) => (s.id === tempId ? saved : s))
         );
-        // 引用の場合、activeQuoteIdも実IDに更新
         if (data.type === "quote") {
           setActiveQuoteId(saved.id);
         }
       } catch (e) {
-        // ロールバック
         setSlices((prev) => prev.filter((s) => s.id !== tempId));
         setError(e instanceof Error ? e.message : "保存に失敗しました");
       }
@@ -73,7 +67,6 @@ export function ReflectionPage({
   );
 
   const handleDelete = useCallback(async (sliceId: string) => {
-    // 楽観的アップデート: 状態を保持してロールバック可能に
     let snapshot: Slice[] = [];
     setSlices((prev) => {
       snapshot = prev;
@@ -124,9 +117,15 @@ export function ReflectionPage({
 
   return (
     <div className="h-full bg-background flex flex-col">
-      <BookMiniHeader book={book} onInfoTap={() => setDetailOpen(true)} />
+      {/* ヘッダー: フォーカスモード時は透過 */}
+      <div
+        className={`transition-opacity duration-300 ${
+          focusMode ? "opacity-10 pointer-events-none" : "opacity-100"
+        }`}
+      >
+        <BookMiniHeader book={book} onInfoTap={() => setDetailOpen(true)} />
+      </div>
 
-      {/* エラー通知 */}
       {error && (
         <div className="mx-6 mt-2 px-4 py-2 bg-stone-200 text-stone-600 font-sans text-xs tracking-wider rounded">
           {error}
@@ -148,6 +147,7 @@ export function ReflectionPage({
         activeQuoteId={activeQuoteId}
         expanded={composerOpen}
         onExpandChange={setComposerOpen}
+        onFocusChange={setFocusMode}
         onSubmit={handleSubmit}
       />
 

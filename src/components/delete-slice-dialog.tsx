@@ -29,12 +29,14 @@ export function DeleteSliceDialog({
       <AlertDialogContent className="bg-stone-50 border-stone-200 max-w-sm mx-auto">
         <AlertDialogHeader>
           <AlertDialogTitle className="font-sans text-sm text-stone-800">
-            {isQuote ? "引用を削除" : "内省を削除"}
+            {isQuote ? "引用を削除" : "削除"}
           </AlertDialogTitle>
           <AlertDialogDescription className="font-sans text-xs text-stone-400 leading-relaxed">
             {isQuote && childCount > 0
               ? `この引用を削除すると、紐づいている${childCount}件の内省は独立した記録として残ります。`
-              : "この操作は取り消せません。"}
+              : childCount > 0
+                ? `この本と${childCount}件の記録がすべて削除されます。`
+                : "この操作は取り消せません。"}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

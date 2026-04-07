@@ -41,6 +41,27 @@ export async function fetchBook(id: string): Promise<Book | null> {
   return toBook(data);
 }
 
+export async function deleteBook(id: string): Promise<void> {
+  const { error } = await supabase
+    .from("sl_books")
+    .delete()
+    .eq("id", id);
+
+  if (error) throw new Error(error.message);
+}
+
+export async function findBookByTitle(title: string): Promise<Book | null> {
+  const { data } = await supabase
+    .from("sl_books")
+    .select("*")
+    .ilike("title", title)
+    .limit(1)
+    .single();
+
+  if (!data) return null;
+  return toBook(data);
+}
+
 export async function fetchBooksWithPreview(): Promise<BookWithPreview[]> {
   // 全書籍を取得
   const { data: books, error: bErr } = await supabase

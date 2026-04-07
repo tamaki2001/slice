@@ -183,11 +183,11 @@ function ReflectionBlock({
             value={slice.body}
             onSave={(t) => { onEdit(t); setEditing(false); }}
             onCancel={() => setEditing(false)}
-            className="font-sans text-stone-800 text-lg leading-loose font-medium"
+            className="font-serif text-stone-800 text-lg leading-loose"
           />
         ) : (
           <>
-            <p className="font-sans text-stone-800 text-lg leading-loose font-medium flex-1">
+            <p className="font-serif text-stone-800 text-lg leading-loose flex-1">
               {slice.body}
             </p>
             <ActionButton onClick={() => setEditing(true)} label="編集">

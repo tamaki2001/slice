@@ -6,7 +6,7 @@ import { ArrowLeft } from "lucide-react";
 import { searchGoogleBooks, searchGoogleBooksByISBN } from "@/lib/google-books";
 import { searchOpenBD } from "@/lib/openbd";
 import { searchNDL, searchNDLByISBN } from "@/lib/ndl";
-import { createBook } from "@/lib/db";
+import { createBook, findBookByTitle } from "@/lib/db";
 import { captureFrameAsBase64 } from "@/lib/ocr";
 import { startBarcodeScanner } from "@/lib/barcode";
 import type { BookCandidate } from "@/lib/types";
@@ -289,6 +289,14 @@ export function CaptureHub() {
   const handleSelectNew = useCallback(
     async (candidate: BookCandidate) => {
       try {
+        // 重複チェック
+        const existing = await findBookByTitle(candidate.title);
+        if (existing) {
+          log(`既に登録済み: ${existing.title}`);
+          router.push(`/book/${existing.id}`);
+          return;
+        }
+
         const book = await createBook({
           title: candidate.title,
           author: candidate.author,
