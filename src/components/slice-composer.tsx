@@ -113,6 +113,7 @@ export function SliceComposer({
           body: JSON.stringify({
             imageBase64: base64,
             userReflection: reflection.trim() || undefined,
+            quoteAnchor: quote.trim() || undefined,
           }),
         });
 
