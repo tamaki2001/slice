@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Trash2, Pencil } from "lucide-react";
 import type { Slice } from "@/lib/types";
 import { DeleteSliceDialog } from "./delete-slice-dialog";
@@ -167,11 +167,13 @@ function ReflectionBlock({
   onDelete,
   onEdit,
   indented,
+  scrolling,
 }: {
   slice: Slice;
   onDelete: () => void;
   onEdit: (text: string) => void;
   indented: boolean;
+  scrolling: boolean;
 }) {
   const [editing, setEditing] = useState(false);
 
@@ -200,7 +202,13 @@ function ReflectionBlock({
         )}
       </div>
       {!editing && (
-        <span className="font-sans text-stone-500 text-xs tracking-widest mt-2 block text-right">
+        <span
+          className={`
+            font-sans text-xs tracking-widest mt-2 block text-right
+            transition-opacity duration-500
+            ${scrolling ? "text-stone-400 opacity-40" : "text-stone-400 opacity-0 group-hover:opacity-40"}
+          `}
+        >
           {formatTime(slice.createdAt)}
         </span>
       )}
@@ -272,6 +280,23 @@ export function SliceThread({
 }) {
   const threads = buildThreads(slices);
 
+  // スクロール検知
+  const [scrolling, setScrolling] = useState(false);
+  const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolling(true);
+      if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
+      scrollTimerRef.current = setTimeout(() => setScrolling(false), 2000);
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
+    };
+  }, []);
+
   const [deleteTarget, setDeleteTarget] = useState<{
     id: string;
     isQuote: boolean;
@@ -309,6 +334,7 @@ export function SliceThread({
                     key={r.id}
                     slice={r}
                     indented
+                    scrolling={scrolling}
                     onDelete={() =>
                       setDeleteTarget({
                         id: r.id,
@@ -327,6 +353,7 @@ export function SliceThread({
               key={item.slice.id}
               slice={item.slice}
               indented={false}
+              scrolling={scrolling}
               onDelete={() =>
                 setDeleteTarget({
                   id: item.slice.id,
