@@ -1,6 +1,7 @@
 "use client";
 
-import { Info } from "lucide-react";
+import Link from "next/link";
+import { Info, ChevronLeft } from "lucide-react";
 import type { Book } from "@/lib/types";
 
 export function BookMiniHeader({
@@ -12,7 +13,14 @@ export function BookMiniHeader({
 }) {
   return (
     <header className="sticky top-0 z-10 bg-background/90 backdrop-blur-sm">
-      <div className="flex items-center gap-4 px-6 py-4">
+      <div className="flex items-center gap-3 px-4 py-4">
+        <Link
+          href="/"
+          className="size-11 flex items-center justify-center text-stone-400 active:text-stone-600 flex-shrink-0"
+          aria-label="タイムラインに戻る"
+        >
+          <ChevronLeft size={20} strokeWidth={1.5} />
+        </Link>
         {book.coverUrl ? (
           <img
             src={book.coverUrl}

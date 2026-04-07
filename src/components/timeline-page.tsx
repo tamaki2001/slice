@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Camera } from "lucide-react";
+import { Camera, Trash2 } from "lucide-react";
 import { deleteBook } from "@/lib/db";
 import { DeleteSliceDialog } from "./delete-slice-dialog";
 import type { BookWithPreview } from "@/lib/types";
@@ -29,11 +29,14 @@ function BookRow({
 }) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const movedRef = useRef(false);
+  const triggeredRef = useRef(false);
 
   const startPress = () => {
     movedRef.current = false;
+    triggeredRef.current = false;
     timerRef.current = setTimeout(() => {
       if (!movedRef.current) {
+        triggeredRef.current = true;
         onLongPress();
       }
     }, 600);
@@ -44,54 +47,79 @@ function BookRow({
   };
 
   return (
-    <Link
-      href={`/book/${book.id}`}
-      className="block px-8 py-8"
-      onTouchStart={startPress}
-      onTouchEnd={endPress}
-      onTouchMove={() => { movedRef.current = true; }}
-      onMouseDown={startPress}
-      onMouseUp={endPress}
-      onMouseLeave={endPress}
-    >
-      <div className="flex items-start gap-5">
-        {book.coverUrl ? (
-          <img
-            src={book.coverUrl}
-            alt=""
-            className="w-12 h-18 object-contain flex-shrink-0 opacity-80"
-            referrerPolicy="no-referrer"
-          />
-        ) : (
-          <div className="w-12 h-18 bg-stone-200 flex-shrink-0" />
-        )}
-        <div className="flex-1 min-w-0">
-          <h2 className="font-sans text-lg font-medium text-stone-800">
-            {book.title}
-          </h2>
-          <span className="font-sans text-xs tracking-widest text-stone-500 block mt-0.5">
-            {book.author}
-          </span>
-          {book.latestSlice && (
-            <p className="font-serif text-sm text-stone-500 leading-relaxed mt-3 line-clamp-2">
-              {book.latestSlice.body}
-            </p>
+    <div className="group relative">
+      <Link
+        href={`/book/${book.id}`}
+        className="block px-8 py-8"
+        onTouchStart={startPress}
+        onTouchEnd={(e) => {
+          endPress();
+          if (triggeredRef.current) e.preventDefault();
+        }}
+        onTouchMove={() => { movedRef.current = true; }}
+        onContextMenu={(e) => e.preventDefault()}
+        onMouseDown={startPress}
+        onMouseUp={endPress}
+        onMouseLeave={endPress}
+      >
+        <div className="flex items-start gap-5">
+          {book.coverUrl ? (
+            <img
+              src={book.coverUrl}
+              alt=""
+              className="w-12 h-18 object-contain flex-shrink-0 opacity-80"
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <div className="w-12 h-18 bg-stone-200 flex-shrink-0" />
           )}
-          <div className="flex items-center gap-3 mt-2">
+          <div className="flex-1 min-w-0">
+            <h2 className="font-sans text-lg font-medium text-stone-800">
+              {book.title}
+            </h2>
+            <span className="font-sans text-xs tracking-widest text-stone-500 block mt-0.5">
+              {book.author}
+            </span>
             {book.latestSlice && (
-              <span className="font-sans text-xs tracking-widest text-stone-400">
-                {relativeTime(book.latestSlice.createdAt)}
-              </span>
+              <p className="font-serif text-sm text-stone-500 leading-relaxed mt-3 line-clamp-2">
+                {book.latestSlice.body}
+              </p>
             )}
-            {book.sliceCount > 0 && (
-              <span className="font-sans text-xs tracking-widest text-stone-400">
-                {book.sliceCount}件
-              </span>
-            )}
+            <div className="flex items-center gap-3 mt-2">
+              {book.latestSlice && (
+                <span className="font-sans text-xs tracking-widest text-stone-400">
+                  {relativeTime(book.latestSlice.createdAt)}
+                </span>
+              )}
+              {book.sliceCount > 0 && (
+                <span className="font-sans text-xs tracking-widest text-stone-400">
+                  {book.sliceCount}件
+                </span>
+              )}
+            </div>
           </div>
         </div>
-      </div>
-    </Link>
+      </Link>
+
+      {/* PC: ホバー時の削除ボタン */}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onLongPress();
+        }}
+        aria-label="削除"
+        className="
+          absolute top-4 right-4
+          size-9 flex items-center justify-center
+          opacity-0 group-hover:opacity-100
+          text-stone-300 hover:text-stone-500
+          transition-opacity
+        "
+      >
+        <Trash2 size={14} strokeWidth={1.5} />
+      </button>
+    </div>
   );
 }
 
@@ -109,7 +137,6 @@ export function TimelinePage({ books: initialBooks }: { books: BookWithPreview[]
     try {
       await deleteBook(id);
     } catch {
-      // ロールバック
       setBooks(initialBooks);
     }
   }, [deleteTarget, initialBooks]);
@@ -153,7 +180,6 @@ export function TimelinePage({ books: initialBooks }: { books: BookWithPreview[]
         <Camera size={22} strokeWidth={1.5} />
       </button>
 
-      {/* 削除確認ダイアログ */}
       <DeleteSliceDialog
         open={deleteTarget !== null}
         onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}

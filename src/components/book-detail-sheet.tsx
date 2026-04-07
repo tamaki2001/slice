@@ -78,9 +78,18 @@ function DetailContent({ book }: { book: Book }) {
             </p>
           )}
           <div className="mt-3 space-y-1 text-sm text-stone-600">
-            <p>{book.author} 著</p>
+            <p>{book.author}</p>
             {book.translator && (
               <p className="text-xs text-stone-400">{book.translator} 訳</p>
+            )}
+            {book.publisher && (
+              <p className="text-xs text-stone-400">{book.publisher}</p>
+            )}
+            {book.publishedYear && (
+              <p className="text-xs text-stone-400">{book.publishedYear}年</p>
+            )}
+            {book.isbn && (
+              <p className="font-mono text-[10px] text-stone-300 mt-1">{book.isbn}</p>
             )}
           </div>
         </div>

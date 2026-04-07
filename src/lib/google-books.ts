@@ -9,6 +9,8 @@ type GoogleBooksItem = {
     authors?: string[];
     imageLinks?: { thumbnail?: string };
     industryIdentifiers?: { type: string; identifier: string }[];
+    publisher?: string;
+    publishedDate?: string;
   };
 };
 
@@ -76,6 +78,7 @@ async function buildCandidates(
         (i) => i.type === "ISBN_13"
       )?.identifier;
       const thumbnail = v.imageLinks?.thumbnail;
+      const publishedYear = v.publishedDate?.slice(0, 4);
 
       const existing = existingBooks.find(
         (b) =>
@@ -89,6 +92,8 @@ async function buildCandidates(
         title,
         author,
         isbn: isbn13,
+        publisher: v.publisher,
+        publishedYear: publishedYear,
         coverUrl: getBookCover(isbn13, thumbnail) || undefined,
         existingBook: existing,
       };

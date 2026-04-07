@@ -4,6 +4,9 @@ export type Book = {
   subtitle?: string;
   author: string;
   translator?: string;
+  publisher?: string;
+  publishedYear?: string;
+  isbn?: string;
   coverUrl: string;
   synopsis?: string;
   tags: string[];
@@ -19,6 +22,8 @@ export type BookCandidate = {
   title: string;
   author: string;
   isbn?: string;
+  publisher?: string;
+  publishedYear?: string;
   coverUrl?: string;
   /** DB内の既存bookと一致した場合 */
   existingBook?: BookWithPreview;

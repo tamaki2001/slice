@@ -300,6 +300,9 @@ export function CaptureHub() {
         const book = await createBook({
           title: candidate.title,
           author: candidate.author,
+          publisher: candidate.publisher,
+          publishedYear: candidate.publishedYear,
+          isbn: candidate.isbn,
           coverUrl: candidate.coverUrl ?? "",
           tags: [],
         });

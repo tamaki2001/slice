@@ -69,6 +69,7 @@ export async function POST(req: NextRequest) {
 
 function buildPrompt(userReflection?: string, startAnchor?: string, endAnchor?: string): string {
   const baseRules = `【共通抽出ルール】
+- 画像全体を隅々までスキャンし、すべてのテキストを把握すること。上部・下部・左右の端も見落とさないこと。
 - ページ番号（ノンブル）、柱（章タイトル）、脚注番号は除外する。
 - ルビ（振り仮名）は無視し、親文字のみを出力する。
 - 行末の改行は結合し、一つの連続した文章にする。段落区切りは改行1つ。
