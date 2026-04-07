@@ -116,7 +116,12 @@ export function ReflectionPage({
   }, [slices.length]);
 
   return (
-    <div className="h-full bg-background flex flex-col">
+    <div className="h-full bg-background flex flex-col relative">
+      {/* スワイプガイド: 左端 */}
+      <div className="absolute left-0 top-1/2 -translate-y-1/2 z-20 pointer-events-none">
+        <div className="w-0.5 h-8 bg-stone-300/30 rounded-full" />
+      </div>
+
       {/* ヘッダー: フォーカスモード時は透過 */}
       <div
         className={`transition-opacity duration-300 ${

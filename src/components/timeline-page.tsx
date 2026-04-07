@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Camera, Trash2 } from "lucide-react";
@@ -8,24 +8,36 @@ import { deleteBook } from "@/lib/db";
 import { DeleteSliceDialog } from "./delete-slice-dialog";
 import type { BookWithPreview } from "@/lib/types";
 
-function relativeTime(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 60) return `${mins}分前`;
-  const hours = Math.floor(mins / 60);
+function formatTime(iso: string): string {
+  const now = Date.now();
+  const d = new Date(iso);
+  const diff = now - d.getTime();
+  const hours = Math.floor(diff / 3600000);
+
   if (hours < 24) return `${hours}時間前`;
+
   const days = Math.floor(hours / 24);
-  if (days < 30) return `${days}日前`;
-  const months = Math.floor(days / 30);
-  return `${months}ヶ月前`;
+  if (days < 7) {
+    const weekday = ["日", "月", "火", "水", "木", "金", "土"][d.getDay()];
+    const h = d.getHours().toString().padStart(2, "0");
+    const m = d.getMinutes().toString().padStart(2, "0");
+    return `${weekday} ${h}:${m}`;
+  }
+
+  const y = d.getFullYear();
+  const mo = (d.getMonth() + 1).toString().padStart(2, "0");
+  const da = d.getDate().toString().padStart(2, "0");
+  return `${y}/${mo}/${da}`;
 }
 
 function BookRow({
   book,
   onLongPress,
+  scrolling,
 }: {
   book: BookWithPreview;
   onLongPress: () => void;
+  scrolling: boolean;
 }) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const movedRef = useRef(false);
@@ -45,6 +57,8 @@ function BookRow({
   const endPress = () => {
     if (timerRef.current) clearTimeout(timerRef.current);
   };
+
+  const ts = book.latestSlice?.createdAt;
 
   return (
     <div className="group relative">
@@ -86,11 +100,6 @@ function BookRow({
               </p>
             )}
             <div className="flex items-center gap-3 mt-2">
-              {book.latestSlice && (
-                <span className="font-sans text-xs tracking-widest text-stone-400">
-                  {relativeTime(book.latestSlice.createdAt)}
-                </span>
-              )}
               {book.sliceCount > 0 && (
                 <span className="font-sans text-xs tracking-widest text-stone-400">
                   {book.sliceCount}件
@@ -100,6 +109,21 @@ function BookRow({
           </div>
         </div>
       </Link>
+
+      {/* 隠された時間: PC=hover, Mobile=scroll中 */}
+      {ts && (
+        <span
+          className={`
+            absolute bottom-3 right-6
+            font-sans text-xs text-stone-300
+            transition-opacity duration-500
+            pointer-events-none
+            ${scrolling ? "opacity-40" : "opacity-0 group-hover:opacity-40"}
+          `}
+        >
+          {formatTime(ts)}
+        </span>
+      )}
 
       {/* PC: ホバー時の削除ボタン */}
       <button
@@ -127,6 +151,23 @@ export function TimelinePage({ books: initialBooks }: { books: BookWithPreview[]
   const router = useRouter();
   const [books, setBooks] = useState(initialBooks);
   const [deleteTarget, setDeleteTarget] = useState<BookWithPreview | null>(null);
+  const [scrolling, setScrolling] = useState(false);
+  const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // スクロール検知: スクロール中→true、停止3秒後→false
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolling(true);
+      if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
+      scrollTimerRef.current = setTimeout(() => setScrolling(false), 3000);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
+    };
+  }, []);
 
   const handleConfirmDelete = useCallback(async () => {
     if (!deleteTarget) return;
@@ -149,6 +190,7 @@ export function TimelinePage({ books: initialBooks }: { books: BookWithPreview[]
             <BookRow
               key={book.id}
               book={book}
+              scrolling={scrolling}
               onLongPress={() => setDeleteTarget(book)}
             />
           ))}
