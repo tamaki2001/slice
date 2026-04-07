@@ -1,4 +1,4 @@
-const MAX_SIDE = 1280;
+const MAX_SIDE = 1024;
 
 export function captureFrameAsBase64(
   video: HTMLVideoElement

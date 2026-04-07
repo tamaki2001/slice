@@ -17,11 +17,11 @@ export function BookMiniHeader({
           <img
             src={book.coverUrl}
             alt=""
-            className="w-12 aspect-[2/3] object-contain flex-shrink-0 shadow-sm"
+            className="w-16 aspect-[2/3] object-contain flex-shrink-0 shadow-md"
             referrerPolicy="no-referrer"
           />
         ) : (
-          <div className="w-12 aspect-[2/3] bg-stone-200 flex-shrink-0" />
+          <div className="w-16 aspect-[2/3] bg-stone-200 flex-shrink-0" />
         )}
         <span className="font-sans text-sm text-stone-800 flex-1 line-clamp-2 leading-snug">
           {book.title}
