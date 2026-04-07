@@ -208,7 +208,7 @@ export function SliceComposer({
               onChange={(e) => setQuote(e.target.value)}
               onKeyDown={handleKeyDown}
               onBlur={handleBlur}
-              placeholder="引用（カメラで撮影 or 手入力）"
+              placeholder="冒頭の数語　末尾の数語"
               rows={1}
               className="
                 w-full resize-none bg-transparent
