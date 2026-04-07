@@ -6,14 +6,28 @@ export async function POST(req: NextRequest) {
   try {
     const { imageBase64, userReflection, quoteAnchor } = await req.json();
 
-    // アンカーを冒頭/末尾に分割（スペース区切り: "冒頭語　末尾語"）
+    // アンカーを冒頭/末尾に分割
+    // 区切り: 全角スペース、半角スペース3つ以上、タブ
     let startAnchor: string | undefined;
     let endAnchor: string | undefined;
     if (quoteAnchor) {
-      const parts = (quoteAnchor as string).split(/\s{2,}|　/);
-      startAnchor = parts[0]?.trim() || undefined;
-      endAnchor = parts.length > 1 ? parts[parts.length - 1]?.trim() : undefined;
+      const raw = (quoteAnchor as string).trim();
+      // 全角スペースで分割を最優先
+      if (raw.includes("　")) {
+        const parts = raw.split("　").map((s: string) => s.trim()).filter(Boolean);
+        startAnchor = parts[0] || undefined;
+        endAnchor = parts.length > 1 ? parts[parts.length - 1] : undefined;
+      } else if (/\s{3,}/.test(raw)) {
+        const parts = raw.split(/\s{3,}/).map((s: string) => s.trim()).filter(Boolean);
+        startAnchor = parts[0] || undefined;
+        endAnchor = parts.length > 1 ? parts[parts.length - 1] : undefined;
+      } else {
+        // 区切りなし→冒頭アンカーのみ
+        startAnchor = raw || undefined;
+      }
     }
+
+    console.log("[ocr] anchors:", { startAnchor, endAnchor, userReflection: !!userReflection });
 
     if (!imageBase64) {
       return NextResponse.json({ error: "画像データがありません" }, { status: 400 });
@@ -68,78 +82,60 @@ export async function POST(req: NextRequest) {
 }
 
 function buildPrompt(userReflection?: string, startAnchor?: string, endAnchor?: string): string {
-  const baseRules = `【共通抽出ルール】
-- 画像全体を隅々までスキャンし、すべてのテキストを把握すること。上部・下部・左右の端も見落とさないこと。
-- ページ番号（ノンブル）、柱（章タイトル）、脚注番号は除外する。
-- ルビ（振り仮名）は無視し、親文字のみを出力する。
-- 行末の改行は結合し、一つの連続した文章にする。段落区切りは改行1つ。
-- 縦書きの場合、右から左への正しい読み順でテキスト化すること。
-- 余計な説明や前置きは不要。抽出したテキストのみを出力すること。`;
+  const ocrRules = `【OCR共通ルール】
+- 画像全体を隅々までスキャンすること。上部・下部・左右の端も見落とさない。
+- ページ番号、柱（章タイトル）、脚注番号は除外。
+- ルビ（振り仮名）は無視し、親文字のみ出力。
+- 行末の改行は結合して一つの文章に。段落区切りのみ改行1つ。
+- 縦書きは右→左の読み順。
+- 説明や前置きは不要。テキストのみ出力。`;
 
   const hasAnchor = startAnchor || endAnchor;
 
-  // アンカー指示を構築
-  const anchorBlock = hasAnchor
-    ? `【範囲指定アンカー】
-${startAnchor ? `冒頭アンカー（引用の始まり）: ${startAnchor}` : "（冒頭指定なし）"}
-${endAnchor ? `末尾アンカー（引用の終わり）: ${endAnchor}` : "（末尾指定なし — 意味的に適切な箇所で終了）"}`
-    : "";
-
-  // モード1: アンカー + 思索
-  if (hasAnchor && userReflection) {
-    return `あなたは熟練の校正者兼文学研究者です。この画像は日本語の書籍のページを撮影したものです。
-
-【タスク】
-1. 画像内のテキストを正確に書き起こしてください。
-2. 以下の「範囲指定アンカー」を使い、引用範囲を特定してください。
-   - 冒頭アンカーがあれば、それで始まる箇所を探してください（曖昧一致可）。
-   - 末尾アンカーがあれば、それを含む箇所で引用を終了してください（曖昧一致可）。
-   - 片方だけの場合は、もう片方はユーザーの思索の文脈に合う範囲で判断してください。
-3. 特定した範囲の完成された引用文のみを返してください。
-
-${anchorBlock}
-
-【ユーザーの思索】
-${userReflection}
-
-${baseRules}`;
-  }
-
-  // モード2: アンカーのみ
+  // ── アンカーあり（冒頭〜末尾の範囲抽出） ──
   if (hasAnchor) {
-    return `あなたは熟練の校正者です。この画像は日本語の書籍のページを撮影したものです。
+    const reflectionContext = userReflection
+      ? `\n\n【参考：ユーザーの思索】\n${userReflection}\n（この思索は範囲特定の参考情報です。引用範囲はアンカーで厳密に決定してください）`
+      : "";
 
-【タスク】
-1. 画像内のテキストを正確に書き起こしてください。
-2. 以下の「範囲指定アンカー」を使い、引用範囲を特定してください。
-   - 冒頭アンカーがあれば、それで始まる箇所を探してください（曖昧一致可）。
-   - 末尾アンカーがあれば、それを含む箇所で引用を終了してください（曖昧一致可）。
-   - 片方だけの場合は、意味的にまとまる範囲で終了してください。
-3. 特定した範囲の完成された引用文のみを返してください。
+    return `あなたは熟練の校正者です。この画像は日本語の書籍のページです。
 
-${anchorBlock}
+【手順】
+ステップ1: 画像内の本文テキストを全て正確に書き起こしてください（内部作業、出力しない）。
+ステップ2: 書き起こした全文から、以下の条件に一致する範囲を切り出してください。
 
-${baseRules}`;
+【範囲の特定方法】
+${startAnchor ? `・開始位置: 「${startAnchor}」という語句を含む文の先頭から開始。多少の誤字があっても最も近い箇所を選ぶこと。` : "・開始位置: 指定なし。末尾アンカーの文脈から適切な開始位置を判断すること。"}
+${endAnchor ? `・終了位置: 「${endAnchor}」という語句を含む文の末尾で終了。この語句の後の文章は含めないこと。` : "・終了位置: 指定なし。意味的にまとまりのある箇所で終了すること。"}
+
+【重要】
+- 開始位置より前のテキストは絶対に含めないこと。
+- 終了位置より後のテキストは絶対に含めないこと。
+- 出力は切り出した引用文のみ。
+${reflectionContext}
+
+${ocrRules}`;
   }
 
-  // モード3: 思索のみ
+  // ── 思索のみ（関連箇所の意味的特定） ──
   if (userReflection) {
-    return `あなたは熟練の校正者兼文学研究者です。この画像は日本語の書籍のページを撮影したものです。
+    return `あなたは熟練の校正者兼文学研究者です。この画像は日本語の書籍のページです。
 
-【タスク】
-1. 画像内のテキストを正確に書き起こしてください。
-2. 書き起こした全文の中から、以下のユーザーの思索内容に直接言及している、あるいはその根拠・着想源となっている一節（数行〜一段落程度）を特定してください。
-3. 特定したその一節のみを返してください。関連箇所が不明な場合はページ内の最も重要な段落を返してください。
+【手順】
+ステップ1: 画像内の本文テキストを全て正確に書き起こしてください（内部作業、出力しない）。
+ステップ2: 書き起こした全文から、以下のユーザーの思索の根拠・着想源となっている一節を特定してください。
 
 【ユーザーの思索】
 ${userReflection}
 
-${baseRules}`;
+【出力】特定した一節のみ（数行〜一段落）。関連箇所が不明な場合はページ内の主要な段落を返すこと。
+
+${ocrRules}`;
   }
 
-  // モード4: 全文OCR
-  return `あなたは熟練の校正者です。この画像は日本語の書籍のページを撮影したものです。
-以下のルールに厳密に従い、本文テキストのみを正確に書き起こしてください。
+  // ── 全文OCR ──
+  return `あなたは熟練の校正者です。この画像は日本語の書籍のページです。
+本文テキストのみを正確に書き起こしてください。
 
-${baseRules}`;
+${ocrRules}`;
 }

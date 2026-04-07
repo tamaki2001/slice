@@ -5,6 +5,11 @@ import { Camera, Loader2 } from "lucide-react";
 import { imageFileToBase64 } from "@/lib/ocr";
 import type { Slice } from "@/lib/types";
 
+export type ComposerSubmission = {
+  quote?: { body: string; reference?: string };
+  reflection?: { body: string };
+};
+
 function haptic(style: "light" | "medium") {
   if (typeof navigator === "undefined" || !navigator.vibrate) return;
   navigator.vibrate(style === "light" ? 10 : 20);
@@ -12,18 +17,16 @@ function haptic(style: "light" | "medium") {
 
 export function SliceComposer({
   bookId,
-  activeQuoteId,
   expanded,
   onExpandChange,
   onFocusChange,
-  onSubmit,
+  onSubmitPair,
 }: {
   bookId: string;
-  activeQuoteId?: string;
   expanded: boolean;
   onExpandChange: (open: boolean) => void;
   onFocusChange?: (focused: boolean) => void;
-  onSubmit: (slice: Omit<Slice, "id" | "createdAt">) => void;
+  onSubmitPair: (data: ComposerSubmission) => void;
 }) {
   const [reflection, setReflection] = useState("");
   const [quote, setQuote] = useState("");
@@ -41,7 +44,6 @@ export function SliceComposer({
     }
   }, [expanded]);
 
-  // テキストエリア自動リサイズ
   useEffect(() => {
     for (const ref of [reflectionRef, quoteRef]) {
       if (!ref.current) continue;
@@ -56,34 +58,16 @@ export function SliceComposer({
     const hasReflection = reflection.trim();
     if (!hasQuote && !hasReflection) return;
 
-    // 引用があれば先に保存
-    let savedQuoteId = activeQuoteId;
-    if (hasQuote) {
-      const quoteId = crypto.randomUUID();
-      onSubmit({
-        bookId,
-        type: "quote",
-        body: quote.trim(),
-        reference: reference.trim() || undefined,
-      });
-      savedQuoteId = quoteId;
-    }
-
-    // 思索があれば保存（引用に紐づけ）
-    if (hasReflection) {
-      onSubmit({
-        bookId,
-        type: "reflection",
-        body: reflection.trim(),
-        quoteId: savedQuoteId,
-      });
-    }
+    onSubmitPair({
+      quote: hasQuote ? { body: quote.trim(), reference: reference.trim() || undefined } : undefined,
+      reflection: hasReflection ? { body: reflection.trim() } : undefined,
+    });
 
     haptic("medium");
     setQuote("");
     setReflection("");
     setReference("");
-  }, [quote, reflection, reference, bookId, activeQuoteId, onSubmit]);
+  }, [quote, reflection, reference, onSubmitPair]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
@@ -92,7 +76,7 @@ export function SliceComposer({
     }
   };
 
-  // ── 意味的OCR ──
+  // ── アンカー連動OCR ──
   const handleOcrCapture = useCallback(() => {
     fileInputRef.current?.click();
   }, []);
@@ -133,10 +117,10 @@ export function SliceComposer({
         setOcrLoading(false);
       }
     },
-    [reflection]
+    [reflection, quote]
   );
 
-  // ── フォーカスモード制御 ──
+  // ── フォーカスモード ──
   const handleFocus = useCallback(() => {
     onFocusChange?.(true);
   }, [onFocusChange]);
@@ -201,7 +185,7 @@ export function SliceComposer({
           "
         />
 
-        {/* ② 引用エリア（OCR結果 or 手動） */}
+        {/* ② 引用エリア */}
         <div className="border-l-2 border-stone-200 pl-4">
           {ocrLoading ? (
             <div className="flex items-center gap-2 py-3">
