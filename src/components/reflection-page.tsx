@@ -238,7 +238,7 @@ export function ReflectionPage({
           focusMode ? "opacity-10 pointer-events-none" : "opacity-100"
         }`}
       >
-        <BookMiniHeader book={currentBook} onInfoTap={() => setDetailOpen(true)} onRefetch={handleRefetchBook} />
+        <BookMiniHeader book={currentBook} onInfoTap={() => setDetailOpen(true)} />
       </div>
 
       {error && (
@@ -279,6 +279,7 @@ export function ReflectionPage({
         book={currentBook}
         open={detailOpen}
         onOpenChange={setDetailOpen}
+        onRefetch={handleRefetchBook}
       />
     </div>
   );

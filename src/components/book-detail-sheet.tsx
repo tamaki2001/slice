@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import {
   Sheet,
   SheetContent,
@@ -13,15 +14,15 @@ export function BookDetailSheet({
   book,
   open,
   onOpenChange,
+  onRefetch,
 }: {
   book: Book;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onRefetch?: () => void;
 }) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      {/* モバイル: bottom, デスクトップ: right */}
-      {/* モバイル用ボトムシート */}
       <SheetContent
         side="bottom"
         showCloseButton={false}
@@ -31,10 +32,9 @@ export function BookDetailSheet({
           <SheetTitle>{book.title} の詳細</SheetTitle>
           <SheetDescription>書籍の詳細情報</SheetDescription>
         </SheetHeader>
-        <DetailContent book={book} />
+        <DetailContent book={book} onRefetch={onRefetch} />
       </SheetContent>
 
-      {/* デスクトップ用サイドパネル */}
       <SheetContent
         side="right"
         showCloseButton
@@ -44,16 +44,27 @@ export function BookDetailSheet({
           <SheetTitle>{book.title} の詳細</SheetTitle>
           <SheetDescription>書籍の詳細情報</SheetDescription>
         </SheetHeader>
-        <DetailContent book={book} />
+        <DetailContent book={book} onRefetch={onRefetch} />
       </SheetContent>
     </Sheet>
   );
 }
 
-function DetailContent({ book }: { book: Book }) {
+function DetailContent({ book, onRefetch }: { book: Book; onRefetch?: () => void }) {
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleTouchStart = () => {
+    timerRef.current = setTimeout(() => {
+      onRefetch?.();
+    }, 800);
+  };
+
+  const handleTouchEnd = () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+  };
+
   return (
     <div className="px-6 py-4 overflow-y-auto">
-      {/* ドラッグハンドル（モバイル） */}
       <div className="flex justify-center mb-6 sm:hidden">
         <div className="w-10 h-1 rounded-full bg-stone-300" />
       </div>
@@ -63,7 +74,16 @@ function DetailContent({ book }: { book: Book }) {
           <img
             src={book.coverUrl}
             alt={`${book.title} 書影`}
-            className="w-20 h-28 object-contain flex-shrink-0"
+            className="w-20 h-28 object-contain flex-shrink-0 select-none"
+            referrerPolicy="no-referrer"
+            draggable={false}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+            onTouchMove={handleTouchEnd}
+            onMouseDown={handleTouchStart}
+            onMouseUp={handleTouchEnd}
+            onMouseLeave={handleTouchEnd}
+            onContextMenu={(e) => e.preventDefault()}
           />
         ) : (
           <div className="w-20 h-28 bg-stone-200 flex-shrink-0" />
