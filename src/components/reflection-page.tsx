@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import type { Book, Slice } from "@/lib/types";
 import { insertSlice, updateSliceBody, deleteSlice, updateBook } from "@/lib/db";
-import { searchNDLByISBN } from "@/lib/ndl";
+import { searchNDL, searchNDLByISBN } from "@/lib/ndl";
 import { searchOpenBD } from "@/lib/openbd";
 import { useRealtimeSlices } from "@/lib/use-realtime-slices";
 import { BookMiniHeader } from "./book-mini-header";
@@ -158,27 +158,28 @@ export function ReflectionPage({
     setComposerOpen(true);
   }, []);
 
-  // 書影長押し→NDLから書誌データを再取得してDBを上書き
+  // 書誌データ更新: NDLから再取得してDBを上書き
   const handleRefetchBook = useCallback(async () => {
-    const isbn = currentBook.isbn;
-    if (!isbn) {
-      navigator?.vibrate?.([20, 50, 20]); // 失敗パターン
-      return;
-    }
-
-    navigator?.vibrate?.(10);
+    try { navigator?.vibrate?.(10); } catch {}
 
     try {
-      // NDL最優先
-      const ndlResults = await searchNDLByISBN(isbn);
-      let enriched = ndlResults[0];
+      let enriched;
 
-      // NDL失敗→OpenBDフォールバック
-      if (!enriched) {
-        const openbd = await searchOpenBD(isbn);
-        if (openbd) {
-          enriched = openbd;
+      // ISBN検索（ISBN登録済みの場合）
+      if (currentBook.isbn) {
+        const ndlResults = await searchNDLByISBN(currentBook.isbn);
+        enriched = ndlResults[0];
+
+        if (!enriched) {
+          const openbd = await searchOpenBD(currentBook.isbn);
+          if (openbd) enriched = openbd;
         }
+      }
+
+      // ISBNなし or ISBN検索失敗→タイトル検索
+      if (!enriched) {
+        const ndlByTitle = await searchNDL(currentBook.title);
+        enriched = ndlByTitle[0];
       }
 
       if (!enriched) return;
@@ -193,6 +194,9 @@ export function ReflectionPage({
       }
       if (enriched.publishedYear && !currentBook.publishedYear) {
         updates.publishedYear = enriched.publishedYear;
+      }
+      if (enriched.isbn && !currentBook.isbn) {
+        updates.isbn = enriched.isbn;
       }
 
       if (Object.keys(updates).length > 0) {

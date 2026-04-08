@@ -126,8 +126,8 @@ function DetailContent({ book, onRefetch }: { book: Book; onRefetch?: () => void
         </div>
       )}
 
-      {/* 書誌データ更新ボタン（インビジブル・トリガー） */}
-      {book.isbn && onRefetch && (
+      {/* 書誌データ更新ボタン */}
+      {onRefetch && (
         <button
           type="button"
           onClick={handleRefetch}
@@ -135,7 +135,8 @@ function DetailContent({ book, onRefetch }: { book: Book; onRefetch?: () => void
           className="
             w-full py-3
             font-sans text-xs tracking-widest
-            text-stone-300 active:text-stone-500
+            text-stone-400 active:text-stone-600
+            disabled:text-stone-300
             transition-colors
           "
         >
