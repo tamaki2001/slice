@@ -1,13 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from "@/components/ui/sheet";
 import type { Book } from "@/lib/types";
 
 export function BookDetailSheet({
@@ -21,36 +14,39 @@ export function BookDetailSheet({
   onOpenChange: (open: boolean) => void;
   onRefetch?: () => void;
 }) {
-  return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="bottom"
-        showCloseButton={false}
-        className="sm:hidden rounded-t-2xl max-h-[85vh] pb-[env(safe-area-inset-bottom,1rem)]"
-      >
-        <SheetHeader className="sr-only">
-          <SheetTitle>{book.title} の詳細</SheetTitle>
-          <SheetDescription>書籍の詳細情報</SheetDescription>
-        </SheetHeader>
-        <DetailContent book={book} onRefetch={onRefetch} />
-      </SheetContent>
+  if (!open) return null;
 
-      <SheetContent
-        side="right"
-        showCloseButton
-        className="hidden sm:flex sm:flex-col sm:w-96"
-      >
-        <SheetHeader className="sr-only">
-          <SheetTitle>{book.title} の詳細</SheetTitle>
-          <SheetDescription>書籍の詳細情報</SheetDescription>
-        </SheetHeader>
-        <DetailContent book={book} onRefetch={onRefetch} />
-      </SheetContent>
-    </Sheet>
+  return (
+    <>
+      {/* オーバーレイ */}
+      <div
+        className="fixed inset-0 z-50 bg-black/10"
+        onClick={() => onOpenChange(false)}
+      />
+
+      {/* モバイル: ボトムシート / PC: サイドパネル */}
+      <div className="fixed z-50 sm:inset-y-0 sm:right-0 sm:w-96 inset-x-0 bottom-0 sm:bottom-auto">
+        <div className="bg-background rounded-t-2xl sm:rounded-none sm:h-full max-h-[85vh] sm:max-h-full overflow-y-auto pb-[env(safe-area-inset-bottom,1rem)] sm:border-l sm:border-stone-200">
+          <DetailContent
+            book={book}
+            onRefetch={onRefetch}
+            onClose={() => onOpenChange(false)}
+          />
+        </div>
+      </div>
+    </>
   );
 }
 
-function DetailContent({ book, onRefetch }: { book: Book; onRefetch?: () => void }) {
+function DetailContent({
+  book,
+  onRefetch,
+  onClose,
+}: {
+  book: Book;
+  onRefetch?: () => void;
+  onClose: () => void;
+}) {
   const [refreshing, setRefreshing] = useState(false);
 
   const handleRefetch = async () => {
@@ -62,10 +58,24 @@ function DetailContent({ book, onRefetch }: { book: Book; onRefetch?: () => void
   };
 
   return (
-    <div className="px-6 py-4 overflow-y-auto">
-      {/* ドラッグハンドル（モバイル） */}
+    <div className="px-6 py-4">
+      {/* ドラッグハンドル（モバイル）/ 閉じるボタン */}
       <div className="flex justify-center mb-6 sm:hidden">
-        <div className="w-10 h-1 rounded-full bg-stone-300" />
+        <button
+          type="button"
+          onClick={onClose}
+          className="w-10 h-1 rounded-full bg-stone-300"
+          aria-label="閉じる"
+        />
+      </div>
+      <div className="hidden sm:flex sm:justify-end sm:mb-4">
+        <button
+          type="button"
+          onClick={onClose}
+          className="font-sans text-xs tracking-widest text-stone-400 active:text-stone-600"
+        >
+          閉じる
+        </button>
       </div>
 
       {/* 書影（中央配置） */}
@@ -80,7 +90,7 @@ function DetailContent({ book, onRefetch }: { book: Book; onRefetch?: () => void
         </div>
       )}
 
-      {/* 書誌情報（縦積み） */}
+      {/* 書誌情報 */}
       <div className="space-y-2 mb-6">
         <h2 className="font-sans text-lg font-bold text-stone-800 leading-snug">
           {book.title}
