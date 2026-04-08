@@ -20,6 +20,7 @@ export function ReflectionPage({
   const [detailOpen, setDetailOpen] = useState(false);
   const [slices, setSlices] = useState(initialSlices);
   const [composerOpen, setComposerOpen] = useState(false);
+  const [activeQuoteId, setActiveQuoteId] = useState<string | undefined>();
   const [focusMode, setFocusMode] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [scrolling, setScrolling] = useState(false);
@@ -49,7 +50,7 @@ export function ReflectionPage({
         const tempId = crypto.randomUUID();
         const tempSlice: Slice = {
           id: tempId,
-          bookId: book.id,
+          bookId: currentBook.id,
           type: "quote",
           body: data.quote.body,
           reference: data.quote.reference,
@@ -59,7 +60,7 @@ export function ReflectionPage({
 
         try {
           const saved = await insertSlice({
-            bookId: book.id,
+            bookId: currentBook.id,
             type: "quote",
             body: data.quote.body,
             reference: data.quote.reference,
@@ -75,23 +76,25 @@ export function ReflectionPage({
 
       // 思索を保存（引用があればquoteIdで紐付け）
       if (data.reflection) {
+        // 紐付け先: 同時保存した引用ID → ＋ボタンで指定された既存引用ID → なし
+        const quoteId = savedQuoteId || activeQuoteId;
         const tempId = crypto.randomUUID();
         const tempSlice: Slice = {
           id: tempId,
-          bookId: book.id,
+          bookId: currentBook.id,
           type: "reflection",
           body: data.reflection.body,
-          quoteId: savedQuoteId,
+          quoteId,
           createdAt: new Date().toISOString(),
         };
         setSlices((prev) => [...prev, tempSlice]);
 
         try {
           const saved = await insertSlice({
-            bookId: book.id,
+            bookId: currentBook.id,
             type: "reflection",
             body: data.reflection.body,
-            quoteId: savedQuoteId,
+            quoteId,
           });
           setSlices((prev) => prev.map((s) => (s.id === tempId ? saved : s)));
         } catch (e) {
@@ -99,8 +102,11 @@ export function ReflectionPage({
           setError(e instanceof Error ? e.message : "思索の保存に失敗しました");
         }
       }
+
+      // 保存完了後にactiveQuoteIdをリセット
+      setActiveQuoteId(undefined);
     },
-    [book.id]
+    [currentBook.id, activeQuoteId]
   );
 
   const handleDelete = useCallback(async (sliceId: string) => {
@@ -146,6 +152,7 @@ export function ReflectionPage({
   }, []);
 
   const handleReplyToQuote = useCallback((quoteId: string) => {
+    setActiveQuoteId(quoteId);
     setComposerOpen(true);
   }, []);
 
@@ -219,7 +226,8 @@ export function ReflectionPage({
       </main>
 
       <SliceComposer
-        bookId={book.id}
+        bookId={currentBook.id}
+        activeQuoteId={activeQuoteId}
         expanded={composerOpen}
         onExpandChange={setComposerOpen}
         onFocusChange={setFocusMode}

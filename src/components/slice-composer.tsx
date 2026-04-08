@@ -17,12 +17,14 @@ function haptic(style: "light" | "medium") {
 
 export function SliceComposer({
   bookId,
+  activeQuoteId,
   expanded,
   onExpandChange,
   onFocusChange,
   onSubmitPair,
 }: {
   bookId: string;
+  activeQuoteId?: string;
   expanded: boolean;
   onExpandChange: (open: boolean) => void;
   onFocusChange?: (focused: boolean) => void;
