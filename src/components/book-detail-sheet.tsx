@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import {
   Sheet,
   SheetContent,
@@ -52,14 +52,22 @@ export function BookDetailSheet({
 
 function DetailContent({ book, onRefetch }: { book: Book; onRefetch?: () => void }) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [pressing, setPressing] = useState(false);
 
-  const handleTouchStart = () => {
+  const handleStart = (e: React.TouchEvent | React.MouseEvent) => {
+    e.preventDefault();
+    setPressing(true);
+    navigator?.vibrate?.(5);
+
     timerRef.current = setTimeout(() => {
+      navigator?.vibrate?.(20);
       onRefetch?.();
+      setPressing(false);
     }, 800);
   };
 
-  const handleTouchEnd = () => {
+  const handleEnd = () => {
+    setPressing(false);
     if (timerRef.current) clearTimeout(timerRef.current);
   };
 
@@ -74,15 +82,19 @@ function DetailContent({ book, onRefetch }: { book: Book; onRefetch?: () => void
           <img
             src={book.coverUrl}
             alt={`${book.title} 書影`}
-            className="w-20 h-28 object-contain flex-shrink-0 select-none"
+            className={`
+              w-20 h-28 object-contain flex-shrink-0 select-none
+              transition-transform duration-200
+              ${pressing ? "scale-105" : "scale-100"}
+            `}
             referrerPolicy="no-referrer"
             draggable={false}
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
-            onTouchMove={handleTouchEnd}
-            onMouseDown={handleTouchStart}
-            onMouseUp={handleTouchEnd}
-            onMouseLeave={handleTouchEnd}
+            onTouchStart={handleStart}
+            onTouchEnd={handleEnd}
+            onTouchMove={handleEnd}
+            onMouseDown={handleStart}
+            onMouseUp={handleEnd}
+            onMouseLeave={handleEnd}
             onContextMenu={(e) => e.preventDefault()}
           />
         ) : (
