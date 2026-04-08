@@ -78,40 +78,40 @@ function DetailContent({
         </button>
       </div>
 
-      {/* 書影（中央配置） */}
-      {book.coverUrl && (
-        <div className="flex justify-center mb-6">
+      {/* 書影 + 書誌情報（横並び） */}
+      <div className="flex gap-5 mb-6">
+        {book.coverUrl ? (
           <img
             src={book.coverUrl}
             alt=""
-            className="h-40 object-contain shadow-sm"
+            className="w-24 aspect-[2/3] object-contain flex-shrink-0 shadow-sm"
             referrerPolicy="no-referrer"
           />
-        </div>
-      )}
-
-      {/* 書誌情報 */}
-      <div className="space-y-2 mb-6">
-        <h2 className="font-sans text-lg font-bold text-stone-800 leading-snug">
-          {book.title}
-        </h2>
-        {book.subtitle && (
-          <p className="font-sans text-xs text-stone-400">{book.subtitle}</p>
+        ) : (
+          <div className="w-24 aspect-[2/3] bg-stone-200 flex-shrink-0" />
         )}
-        <div className="space-y-1 text-sm text-stone-600">
-          <p>{book.author}</p>
-          {book.translator && (
-            <p className="text-xs text-stone-400">{book.translator} 訳</p>
+        <div className="flex-1 min-w-0 space-y-2">
+          <h2 className="font-sans text-lg font-bold text-stone-800 leading-snug">
+            {book.title}
+          </h2>
+          {book.subtitle && (
+            <p className="font-sans text-xs text-stone-400">{book.subtitle}</p>
           )}
-          {book.publisher && (
-            <p className="text-xs text-stone-400">{book.publisher}</p>
-          )}
-          {book.publishedYear && (
-            <p className="text-xs text-stone-400">{book.publishedYear}年</p>
-          )}
-          {book.isbn && (
-            <p className="font-mono text-[10px] text-stone-300 mt-1">{book.isbn}</p>
-          )}
+          <div className="space-y-1 text-sm text-stone-600">
+            <p>{book.author}</p>
+            {book.translator && (
+              <p className="text-xs text-stone-400">{book.translator} 訳</p>
+            )}
+            {book.publisher && (
+              <p className="text-xs text-stone-400">{book.publisher}</p>
+            )}
+            {book.publishedYear && (
+              <p className="text-xs text-stone-400">{book.publishedYear}年</p>
+            )}
+            {book.isbn && (
+              <p className="font-mono text-[10px] text-stone-300 mt-1">{book.isbn}</p>
+            )}
+          </div>
         </div>
       </div>
 
