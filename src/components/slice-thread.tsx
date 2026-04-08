@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Trash2, Pencil } from "lucide-react";
 import type { Slice } from "@/lib/types";
 import { DeleteSliceDialog } from "./delete-slice-dialog";
 
-/* ── アクションボタン（44x44 hitbox） ── */
+/* ── アクションボタン（44x44 hitbox、モバイルでも微かに見える） ── */
 
 function ActionButton({
   onClick,
@@ -23,8 +23,8 @@ function ActionButton({
       aria-label={label}
       className="
         size-11 flex items-center justify-center
-        opacity-0 group-hover:opacity-100 group-focus-within:opacity-100
-        text-stone-300 hover:text-stone-500 active:text-stone-500
+        opacity-20 group-hover:opacity-100 group-focus-within:opacity-100
+        text-stone-400 hover:text-stone-600 active:text-stone-600
         transition-opacity shrink-0
       "
     >
@@ -33,59 +33,74 @@ function ActionButton({
   );
 }
 
-/* ── インライン編集テキストエリア ── */
+/* ── インライン編集（リファレンスも編集可） ── */
 
 function InlineEditor({
   value,
+  reference,
   onSave,
   onCancel,
   className,
+  showReference,
 }: {
   value: string;
-  onSave: (text: string) => void;
+  reference?: string;
+  onSave: (text: string, ref?: string) => void;
   onCancel: () => void;
   className?: string;
+  showReference?: boolean;
 }) {
   const [text, setText] = useState(value);
-  const ref = useRef<HTMLTextAreaElement>(null);
+  const [ref, setRef] = useState(reference ?? "");
+  const textRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    if (!ref.current) return;
-    ref.current.focus();
-    ref.current.style.height = "auto";
-    ref.current.style.height = ref.current.scrollHeight + "px";
+    if (!textRef.current) return;
+    textRef.current.focus();
+    textRef.current.style.height = "auto";
+    textRef.current.style.height = textRef.current.scrollHeight + "px";
   }, []);
 
   useEffect(() => {
-    if (!ref.current) return;
-    ref.current.style.height = "auto";
-    ref.current.style.height = ref.current.scrollHeight + "px";
+    if (!textRef.current) return;
+    textRef.current.style.height = "auto";
+    textRef.current.style.height = textRef.current.scrollHeight + "px";
   }, [text]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
-      if (text.trim()) onSave(text.trim());
+      if (text.trim()) onSave(text.trim(), ref.trim() || undefined);
     } else if (e.key === "Escape") {
       onCancel();
     }
   };
 
   return (
-    <div className="flex-1">
+    <div className="flex-1 space-y-2">
       <textarea
-        ref={ref}
+        ref={textRef}
         value={text}
         onChange={(e) => setText(e.target.value)}
         onKeyDown={handleKeyDown}
         rows={2}
         className={`w-full resize-none bg-stone-100/50 rounded px-2 py-1 focus:outline-none ${className ?? ""}`}
       />
-      <div className="flex gap-3 mt-1">
+      {showReference && (
+        <input
+          type="text"
+          value={ref}
+          onChange={(e) => setRef(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="p."
+          className="w-24 bg-transparent font-sans text-sm tracking-widest text-stone-500 placeholder:text-stone-400 border-b border-stone-200 focus:border-stone-400 focus:outline-none py-1"
+        />
+      )}
+      <div className="flex gap-3">
         <button
           type="button"
-          onClick={() => { if (text.trim()) onSave(text.trim()); }}
-          className="font-sans text-xs tracking-widest text-stone-400 active:text-stone-600"
+          onClick={() => { if (text.trim()) onSave(text.trim(), ref.trim() || undefined); }}
+          className="font-sans text-xs tracking-widest text-stone-500 active:text-stone-700"
         >
           保存
         </button>
@@ -112,7 +127,7 @@ function QuoteBlock({
   slice: Slice;
   onAddReflection: () => void;
   onDelete: () => void;
-  onEdit: (text: string) => void;
+  onEdit: (text: string, ref?: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
 
@@ -122,13 +137,15 @@ function QuoteBlock({
         {editing ? (
           <InlineEditor
             value={slice.body}
-            onSave={(t) => { onEdit(t); setEditing(false); }}
+            reference={slice.reference}
+            showReference
+            onSave={(t, r) => { onEdit(t, r); setEditing(false); }}
             onCancel={() => setEditing(false)}
-            className="font-serif text-stone-500 text-lg leading-loose italic"
+            className="font-serif text-stone-500 text-base leading-relaxed italic whitespace-pre-wrap"
           />
         ) : (
           <>
-            <p className="font-serif text-stone-500 text-lg leading-loose italic flex-1">
+            <p className="font-serif text-stone-500 text-base leading-relaxed italic flex-1 whitespace-pre-wrap">
               {slice.body}
             </p>
             <ActionButton onClick={() => setEditing(true)} label="編集">
@@ -141,9 +158,9 @@ function QuoteBlock({
         )}
       </div>
       {!editing && (
-        <div className="flex items-center justify-between mt-2">
+        <div className="flex items-center justify-between mt-3">
           {slice.reference ? (
-            <span className="font-sans text-stone-500 text-xs tracking-widest">
+            <span className="font-sans text-stone-400 text-xs tracking-widest">
               {slice.reference}
             </span>
           ) : (
@@ -185,11 +202,11 @@ function ReflectionBlock({
             value={slice.body}
             onSave={(t) => { onEdit(t); setEditing(false); }}
             onCancel={() => setEditing(false)}
-            className="font-serif text-stone-800 text-lg leading-loose"
+            className="font-serif text-stone-800 text-base leading-relaxed whitespace-pre-wrap"
           />
         ) : (
           <>
-            <p className="font-serif text-stone-800 text-lg leading-loose flex-1">
+            <p className="font-serif text-stone-800 text-base leading-relaxed flex-1 whitespace-pre-wrap">
               {slice.body}
             </p>
             <ActionButton onClick={() => setEditing(true)} label="編集">
@@ -206,7 +223,7 @@ function ReflectionBlock({
           className={`
             font-sans text-xs tracking-widest mt-2 block text-right
             transition-opacity duration-500
-            ${scrolling ? "text-stone-400 opacity-40" : "text-stone-400 opacity-0 group-hover:opacity-40"}
+            ${scrolling ? "text-stone-400 opacity-60" : "text-stone-400 opacity-0 group-hover:opacity-60"}
           `}
         >
           {formatTime(slice.createdAt)}
@@ -278,7 +295,7 @@ export function SliceThread({
   scrolling?: boolean;
   onReplyToQuote?: (quoteId: string) => void;
   onDelete?: (sliceId: string) => void;
-  onEdit?: (sliceId: string, body: string) => void;
+  onEdit?: (sliceId: string, body: string, reference?: string) => void;
 }) {
   const threads = buildThreads(slices);
 
@@ -312,7 +329,7 @@ export function SliceThread({
                       childCount: item.reflections.length,
                     })
                   }
-                  onEdit={(text) => onEdit?.(item.quote.id, text)}
+                  onEdit={(text, ref) => onEdit?.(item.quote.id, text, ref)}
                 />
                 {item.reflections.map((r) => (
                   <ReflectionBlock

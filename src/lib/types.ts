@@ -19,7 +19,7 @@ export type BookWithPreview = Book & {
 
 export type TimelineEntry = {
   book: Book;
-  slice: { body: string; type: string; createdAt: string };
+  slice: { body: string; type: string; quoteId?: string; createdAt: string };
 };
 
 export type BookCandidate = {

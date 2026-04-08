@@ -108,10 +108,21 @@ function SliceRow({
   entry: TimelineEntry;
   scrolling: boolean;
 }) {
+  const isQuote = entry.slice.type === "quote";
+  const isLinkedReflection = entry.slice.type === "reflection" && entry.slice.quoteId;
+
   return (
     <div className="group relative px-8 py-3">
-      <Link href={`/book/${entry.book.id}`} className="block">
-        <p className="font-serif text-sm text-stone-500 leading-relaxed line-clamp-3">
+      <Link
+        href={`/book/${entry.book.id}`}
+        className={`block ${isLinkedReflection ? "pl-6" : ""}`}
+      >
+        <p
+          className={`
+            font-serif text-sm leading-relaxed line-clamp-3 whitespace-pre-wrap
+            ${isQuote ? "italic text-stone-400" : "text-stone-600"}
+          `}
+        >
           {entry.slice.body}
         </p>
       </Link>
@@ -120,10 +131,10 @@ function SliceRow({
       <span
         className={`
           absolute bottom-1 right-6
-          font-sans text-xs text-stone-300
+          font-sans text-xs text-stone-400
           transition-opacity duration-500
           pointer-events-none
-          ${scrolling ? "opacity-40" : "opacity-0 group-hover:opacity-40"}
+          ${scrolling ? "opacity-60" : "opacity-0 group-hover:opacity-60"}
         `}
       >
         {formatTime(entry.slice.createdAt)}

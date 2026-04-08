@@ -106,7 +106,7 @@ export async function fetchBooksWithPreview(): Promise<BookWithPreview[]> {
 export async function fetchTimelineFeed(): Promise<TimelineEntry[]> {
   const { data: slices } = await supabase
     .from("sl_slices")
-    .select("book_id, body, type, created_at")
+    .select("book_id, body, type, quote_id, created_at")
     .order("created_at", { ascending: false })
     .limit(100);
 
@@ -124,21 +124,22 @@ export async function fetchTimelineFeed(): Promise<TimelineEntry[]> {
     bookMap.set(b.id, b);
   }
 
-  return slices
-    .map((s) => {
-      const r = s as Record<string, unknown>;
-      const book = bookMap.get(r.book_id as string);
-      if (!book) return null;
-      return {
-        book,
-        slice: {
-          body: r.body as string,
-          type: r.type as string,
-          createdAt: r.created_at as string,
-        },
-      };
-    })
-    .filter((e): e is TimelineEntry => e !== null);
+  const entries: TimelineEntry[] = [];
+  for (const s of slices) {
+    const r = s as Record<string, unknown>;
+    const book = bookMap.get(r.book_id as string);
+    if (!book) continue;
+    entries.push({
+      book,
+      slice: {
+        body: r.body as string,
+        type: r.type as string,
+        quoteId: (r.quote_id as string) || undefined,
+        createdAt: r.created_at as string,
+      },
+    });
+  }
+  return entries;
 }
 
 export async function searchBooksByTitle(query: string): Promise<BookWithPreview[]> {
@@ -232,11 +233,15 @@ export async function insertSlice(
 
 export async function updateSliceBody(
   id: string,
-  body: string
+  body: string,
+  reference?: string
 ): Promise<void> {
+  const update: Record<string, unknown> = { body };
+  if (reference !== undefined) update.reference = reference || null;
+
   const { error } = await supabase
     .from("sl_slices")
-    .update({ body })
+    .update(update)
     .eq("id", id);
 
   if (error) throw new Error(error.message);

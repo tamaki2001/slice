@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import type { Book, Slice } from "@/lib/types";
-import { insertSlice, updateSliceBody, deleteSlice } from "@/lib/db";
+import { insertSlice, updateSliceBody, deleteSlice, fetchBook } from "@/lib/db";
 import { useRealtimeSlices } from "@/lib/use-realtime-slices";
 import { BookMiniHeader } from "./book-mini-header";
 import { SliceThread } from "./slice-thread";
@@ -16,6 +16,7 @@ export function ReflectionPage({
   book: Book;
   slices: Slice[];
 }) {
+  const [currentBook, setCurrentBook] = useState(book);
   const [detailOpen, setDetailOpen] = useState(false);
   const [slices, setSlices] = useState(initialSlices);
   const [composerOpen, setComposerOpen] = useState(false);
@@ -127,15 +128,17 @@ export function ReflectionPage({
     }
   }, []);
 
-  const handleEdit = useCallback(async (sliceId: string, body: string) => {
+  const handleEdit = useCallback(async (sliceId: string, body: string, reference?: string) => {
     let snapshot: Slice[] = [];
     setSlices((prev) => {
       snapshot = prev;
-      return prev.map((s) => (s.id === sliceId ? { ...s, body } : s));
+      return prev.map((s) =>
+        s.id === sliceId ? { ...s, body, ...(reference !== undefined ? { reference } : {}) } : s
+      );
     });
 
     try {
-      await updateSliceBody(sliceId, body);
+      await updateSliceBody(sliceId, body, reference);
     } catch (e) {
       setSlices(snapshot);
       setError(e instanceof Error ? e.message : "更新に失敗しました");
@@ -145,6 +148,18 @@ export function ReflectionPage({
   const handleReplyToQuote = useCallback((quoteId: string) => {
     setComposerOpen(true);
   }, []);
+
+  const handleRefetchBook = useCallback(async () => {
+    try {
+      const updated = await fetchBook(currentBook.id);
+      if (updated) {
+        setCurrentBook(updated);
+        navigator?.vibrate?.(10);
+      }
+    } catch {
+      // 静かに失敗
+    }
+  }, [currentBook.id]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -175,7 +190,7 @@ export function ReflectionPage({
           focusMode ? "opacity-10 pointer-events-none" : "opacity-100"
         }`}
       >
-        <BookMiniHeader book={book} onInfoTap={() => setDetailOpen(true)} />
+        <BookMiniHeader book={currentBook} onInfoTap={() => setDetailOpen(true)} onRefetch={handleRefetchBook} />
       </div>
 
       {error && (
@@ -212,7 +227,7 @@ export function ReflectionPage({
       />
 
       <BookDetailSheet
-        book={book}
+        book={currentBook}
         open={detailOpen}
         onOpenChange={setDetailOpen}
       />

@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import Link from "next/link";
 import { Info, ChevronLeft } from "lucide-react";
 import type { Book } from "@/lib/types";
@@ -7,10 +8,24 @@ import type { Book } from "@/lib/types";
 export function BookMiniHeader({
   book,
   onInfoTap,
+  onRefetch,
 }: {
   book: Book;
   onInfoTap: () => void;
+  onRefetch?: () => void;
 }) {
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleCoverTouchStart = () => {
+    timerRef.current = setTimeout(() => {
+      onRefetch?.();
+    }, 800);
+  };
+
+  const handleCoverTouchEnd = () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+  };
+
   return (
     <header className="sticky top-0 z-10 bg-background/90 backdrop-blur-sm">
       <div className="flex items-center gap-3 px-4 py-4">
@@ -27,6 +42,13 @@ export function BookMiniHeader({
             alt=""
             className="w-16 aspect-[2/3] object-contain flex-shrink-0 shadow-md"
             referrerPolicy="no-referrer"
+            onTouchStart={handleCoverTouchStart}
+            onTouchEnd={handleCoverTouchEnd}
+            onTouchMove={handleCoverTouchEnd}
+            onMouseDown={handleCoverTouchStart}
+            onMouseUp={handleCoverTouchEnd}
+            onMouseLeave={handleCoverTouchEnd}
+            onContextMenu={(e) => e.preventDefault()}
           />
         ) : (
           <div className="w-16 aspect-[2/3] bg-stone-200 flex-shrink-0" />
