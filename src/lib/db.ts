@@ -247,6 +247,30 @@ export async function updateSliceBody(
   if (error) throw new Error(error.message);
 }
 
+export async function updateBook(
+  id: string,
+  fields: Partial<Omit<Book, "id">>
+): Promise<Book | null> {
+  const update: Record<string, unknown> = {};
+  if (fields.title !== undefined) update.title = fields.title;
+  if (fields.author !== undefined) update.author = fields.author;
+  if (fields.publisher !== undefined) update.publisher = fields.publisher || null;
+  if (fields.publishedYear !== undefined) update.published_year = fields.publishedYear || null;
+  if (fields.isbn !== undefined) update.isbn = fields.isbn || null;
+  if (fields.coverUrl !== undefined) update.cover_url = fields.coverUrl || null;
+  if (fields.synopsis !== undefined) update.synopsis = fields.synopsis || null;
+
+  const { data, error } = await supabase
+    .from("sl_books")
+    .update(update)
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error || !data) return null;
+  return toBook(data);
+}
+
 export async function deleteSlice(id: string): Promise<void> {
   const { error } = await supabase
     .from("sl_slices")

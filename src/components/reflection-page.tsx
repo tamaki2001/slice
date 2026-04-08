@@ -2,7 +2,9 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import type { Book, Slice } from "@/lib/types";
-import { insertSlice, updateSliceBody, deleteSlice, fetchBook } from "@/lib/db";
+import { insertSlice, updateSliceBody, deleteSlice, updateBook } from "@/lib/db";
+import { searchNDLByISBN } from "@/lib/ndl";
+import { searchOpenBD } from "@/lib/openbd";
 import { useRealtimeSlices } from "@/lib/use-realtime-slices";
 import { BookMiniHeader } from "./book-mini-header";
 import { SliceThread } from "./slice-thread";
@@ -156,17 +158,56 @@ export function ReflectionPage({
     setComposerOpen(true);
   }, []);
 
+  // 書影長押し→NDLから書誌データを再取得してDBを上書き
   const handleRefetchBook = useCallback(async () => {
+    const isbn = currentBook.isbn;
+    if (!isbn) {
+      navigator?.vibrate?.([20, 50, 20]); // 失敗パターン
+      return;
+    }
+
+    navigator?.vibrate?.(10);
+
     try {
-      const updated = await fetchBook(currentBook.id);
-      if (updated) {
-        setCurrentBook(updated);
-        navigator?.vibrate?.(10);
+      // NDL最優先
+      const ndlResults = await searchNDLByISBN(isbn);
+      let enriched = ndlResults[0];
+
+      // NDL失敗→OpenBDフォールバック
+      if (!enriched) {
+        const openbd = await searchOpenBD(isbn);
+        if (openbd) {
+          enriched = openbd;
+        }
+      }
+
+      if (!enriched) return;
+
+      // DBを上書き（既存データより充実しているフィールドのみ）
+      const updates: Partial<typeof currentBook> = {};
+      if (enriched.author && enriched.author.length > (currentBook.author?.length ?? 0)) {
+        updates.author = enriched.author;
+      }
+      if (enriched.publisher && !currentBook.publisher) {
+        updates.publisher = enriched.publisher;
+      }
+      if (enriched.publishedYear && !currentBook.publishedYear) {
+        updates.publishedYear = enriched.publishedYear;
+      }
+
+      if (Object.keys(updates).length > 0) {
+        const saved = await updateBook(currentBook.id, updates);
+        if (saved) {
+          setCurrentBook(saved);
+          navigator?.vibrate?.(20); // 成功
+        }
+      } else {
+        navigator?.vibrate?.(10); // 変更なし
       }
     } catch {
       // 静かに失敗
     }
-  }, [currentBook.id]);
+  }, [currentBook]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
