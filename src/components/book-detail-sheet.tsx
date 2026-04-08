@@ -90,16 +90,6 @@ function DetailContent({
   onRefetch?: () => void;
   onClose: () => void;
 }) {
-  const [refreshing, setRefreshing] = useState(false);
-
-  const handleRefetch = async () => {
-    if (refreshing || !onRefetch) return;
-    setRefreshing(true);
-    try { navigator?.vibrate?.(10); } catch {}
-    onRefetch();
-    setTimeout(() => setRefreshing(false), 2000);
-  };
-
   return (
     <div className="px-6 py-4">
       {/* モバイル: ドラッグハンドル / PC: 閉じるボタン */}
@@ -179,23 +169,7 @@ function DetailContent({
         </div>
       )}
 
-      {/* 書誌データ更新ボタン */}
-      {onRefetch && (
-        <button
-          type="button"
-          onClick={handleRefetch}
-          disabled={refreshing}
-          className="
-            w-full py-3
-            font-sans text-xs tracking-widest
-            text-stone-400 active:text-stone-600
-            disabled:text-stone-300
-            transition-colors
-          "
-        >
-          {refreshing ? "更新中..." : "書誌データを更新"}
-        </button>
-      )}
+      {/* 書誌データ更新: 現在無効化中 */}
     </div>
   );
 }

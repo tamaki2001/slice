@@ -2,9 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import type { Book, Slice } from "@/lib/types";
-import { insertSlice, updateSliceBody, deleteSlice, updateBook } from "@/lib/db";
-import { searchNDL, searchNDLByISBN } from "@/lib/ndl";
-import { searchOpenBD } from "@/lib/openbd";
+import { insertSlice, updateSliceBody, deleteSlice } from "@/lib/db";
 import { useRealtimeSlices } from "@/lib/use-realtime-slices";
 import { BookMiniHeader } from "./book-mini-header";
 import { SliceThread } from "./slice-thread";
@@ -158,60 +156,8 @@ export function ReflectionPage({
     setComposerOpen(true);
   }, []);
 
-  // 書誌データ更新: NDLから再取得してDBを上書き
-  const handleRefetchBook = useCallback(async () => {
-    try { navigator?.vibrate?.(10); } catch {}
-
-    try {
-      let enriched;
-
-      // ISBN検索（ISBN登録済みの場合）
-      if (currentBook.isbn) {
-        const ndlResults = await searchNDLByISBN(currentBook.isbn);
-        enriched = ndlResults[0];
-
-        if (!enriched) {
-          const openbd = await searchOpenBD(currentBook.isbn);
-          if (openbd) enriched = openbd;
-        }
-      }
-
-      // ISBNなし or ISBN検索失敗→タイトル検索
-      if (!enriched) {
-        const ndlByTitle = await searchNDL(currentBook.title);
-        enriched = ndlByTitle[0];
-      }
-
-      if (!enriched) return;
-
-      // DBを上書き（既存データより充実しているフィールドのみ）
-      const updates: Partial<typeof currentBook> = {};
-      if (enriched.author && enriched.author.length > (currentBook.author?.length ?? 0)) {
-        updates.author = enriched.author;
-      }
-      if (enriched.publisher && !currentBook.publisher) {
-        updates.publisher = enriched.publisher;
-      }
-      if (enriched.publishedYear && !currentBook.publishedYear) {
-        updates.publishedYear = enriched.publishedYear;
-      }
-      if (enriched.isbn && !currentBook.isbn) {
-        updates.isbn = enriched.isbn;
-      }
-
-      if (Object.keys(updates).length > 0) {
-        const saved = await updateBook(currentBook.id, updates);
-        if (saved) {
-          setCurrentBook(saved);
-          navigator?.vibrate?.(20); // 成功
-        }
-      } else {
-        navigator?.vibrate?.(10); // 変更なし
-      }
-    } catch {
-      // 静かに失敗
-    }
-  }, [currentBook]);
+  // 書誌データ更新: 現在無効化中
+  // 初回登録時にNDLからリッチなデータが入るため不要
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -283,7 +229,6 @@ export function ReflectionPage({
         book={currentBook}
         open={detailOpen}
         onOpenChange={setDetailOpen}
-        onRefetch={handleRefetchBook}
       />
     </div>
   );
