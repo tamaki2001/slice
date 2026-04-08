@@ -54,13 +54,12 @@ function DetailContent({ book, onRefetch }: { book: Book; onRefetch?: () => void
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [pressing, setPressing] = useState(false);
 
-  const handleStart = (e: React.TouchEvent | React.MouseEvent) => {
-    e.preventDefault();
+  const handleStart = () => {
     setPressing(true);
-    navigator?.vibrate?.(5);
+    try { navigator?.vibrate?.(5); } catch {}
 
     timerRef.current = setTimeout(() => {
-      navigator?.vibrate?.(20);
+      try { navigator?.vibrate?.(20); } catch {}
       onRefetch?.();
       setPressing(false);
     }, 800);
@@ -68,7 +67,10 @@ function DetailContent({ book, onRefetch }: { book: Book; onRefetch?: () => void
 
   const handleEnd = () => {
     setPressing(false);
-    if (timerRef.current) clearTimeout(timerRef.current);
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
   };
 
   return (
@@ -89,12 +91,10 @@ function DetailContent({ book, onRefetch }: { book: Book; onRefetch?: () => void
             `}
             referrerPolicy="no-referrer"
             draggable={false}
-            onTouchStart={handleStart}
-            onTouchEnd={handleEnd}
-            onTouchMove={handleEnd}
-            onMouseDown={handleStart}
-            onMouseUp={handleEnd}
-            onMouseLeave={handleEnd}
+            onPointerDown={handleStart}
+            onPointerUp={handleEnd}
+            onPointerCancel={handleEnd}
+            onPointerLeave={handleEnd}
             onContextMenu={(e) => e.preventDefault()}
           />
         ) : (
