@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Book } from "@/lib/types";
 
 export function BookDetailSheet({
@@ -14,19 +14,62 @@ export function BookDetailSheet({
   onOpenChange: (open: boolean) => void;
   onRefetch?: () => void;
 }) {
-  if (!open) return null;
+  const [visible, setVisible] = useState(false);
+  const [animate, setAnimate] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setVisible(true);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => setAnimate(true));
+      });
+    } else {
+      setAnimate(false);
+      const t = setTimeout(() => setVisible(false), 300);
+      return () => clearTimeout(t);
+    }
+  }, [open]);
+
+  if (!visible) return null;
 
   return (
     <>
       {/* オーバーレイ */}
       <div
-        className="fixed inset-0 z-50 bg-black/10"
+        className={`
+          fixed inset-0 z-50 bg-black/10
+          transition-opacity duration-300
+          ${animate ? "opacity-100" : "opacity-0"}
+        `}
         onClick={() => onOpenChange(false)}
       />
 
-      {/* モバイル: ボトムシート / PC: サイドパネル */}
-      <div className="fixed z-50 sm:inset-y-0 sm:right-0 sm:w-96 inset-x-0 bottom-0 sm:bottom-auto">
-        <div className="bg-background rounded-t-2xl sm:rounded-none sm:h-full max-h-[85vh] sm:max-h-full overflow-y-auto pb-[env(safe-area-inset-bottom,1rem)] sm:border-l sm:border-stone-200">
+      {/* モバイル: ボトムシート（下からスライド） */}
+      <div
+        className={`
+          fixed z-50 inset-x-0 bottom-0 sm:hidden
+          transition-transform duration-300 ease-out
+          ${animate ? "translate-y-0" : "translate-y-full"}
+        `}
+      >
+        <div className="bg-background rounded-t-2xl max-h-[85vh] overflow-y-auto pb-[env(safe-area-inset-bottom,1rem)]">
+          <DetailContent
+            book={book}
+            onRefetch={onRefetch}
+            onClose={() => onOpenChange(false)}
+          />
+        </div>
+      </div>
+
+      {/* PC: サイドパネル（右からスライド） */}
+      <div
+        className={`
+          fixed z-50 inset-y-0 right-0 w-96 hidden sm:block
+          transition-transform duration-300 ease-out
+          ${animate ? "translate-x-0" : "translate-x-full"}
+        `}
+      >
+        <div className="bg-background h-full overflow-y-auto border-l border-stone-200">
           <DetailContent
             book={book}
             onRefetch={onRefetch}
@@ -59,7 +102,7 @@ function DetailContent({
 
   return (
     <div className="px-6 py-4">
-      {/* ドラッグハンドル（モバイル）/ 閉じるボタン */}
+      {/* モバイル: ドラッグハンドル / PC: 閉じるボタン */}
       <div className="flex justify-center mb-6 sm:hidden">
         <button
           type="button"
