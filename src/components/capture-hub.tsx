@@ -6,6 +6,7 @@ import { ArrowLeft } from "lucide-react";
 import { searchGoogleBooks, searchGoogleBooksByISBN } from "@/lib/google-books";
 import { searchOpenBD } from "@/lib/openbd";
 import { searchNDL, searchNDLByISBN } from "@/lib/ndl";
+import { getBookCover } from "@/lib/cover";
 import { createBook, findBookByTitle } from "@/lib/db";
 import { captureFrameAsBase64 } from "@/lib/ocr";
 import { startBarcodeScanner } from "@/lib/barcode";
@@ -75,51 +76,61 @@ export function CaptureHub() {
     setCameraReady(false);
   }, []);
 
-  // ── ISBN → 書籍検索（OpenBD優先） ──
+  // ── ISBN → 書籍検索（NDL最優先 + 書影補完） ──
   const searchByISBN = useCallback(
     async (isbn: string): Promise<BookCandidate[]> => {
-      // 1. OpenBD + Google Booksを並行検索
-      log(`ISBN検索開始: ${isbn}`);
-      const [openbd, gbResults] = await Promise.all([
-        searchOpenBD(isbn).catch(() => null),
-        searchGoogleBooksByISBN(isbn).catch(() => [] as BookCandidate[]),
-      ]);
+      const isJapanese = isbn.startsWith("9784");
+      log(`ISBN検索開始: ${isbn} (${isJapanese ? "日本語" : "外国語"})`);
 
-      const results: BookCandidate[] = [];
+      // 日本語書籍: NDL最優先、書影はGoogle Books埋め込みURLで補完
+      if (isJapanese) {
+        // NDL + OpenBD を並行
+        const [ndlResults, openbd] = await Promise.all([
+          searchNDLByISBN(isbn).catch(() => []),
+          searchOpenBD(isbn).catch(() => null),
+        ]);
 
-      if (openbd) {
-        log(`OpenBDヒット: ${openbd.title} (cover: ${openbd.coverUrl ?? "なし"})`);
-        // 書影がなければGoogle Booksから補完
-        if (!openbd.coverUrl) {
-          const gbCover = gbResults.find((g) => g.coverUrl)?.coverUrl;
-          if (gbCover) {
-            openbd.coverUrl = gbCover;
-            log(`Google Books書影で補完: ${gbCover}`);
+        if (ndlResults.length > 0) {
+          const primary = ndlResults[0];
+          log(`NDLヒット: "${primary.title}" 著者: ${primary.author} 出版: ${primary.publisher ?? "?"} ${primary.publishedYear ?? "?"}`);
+
+          // NDLのデータをOpenBDで補完（NDLにない情報のみ）
+          if (openbd) {
+            if (!primary.publisher && openbd.author) {
+              // OpenBDは著者名が短い形式のことがあるのでNDL優先
+            }
           }
+
+          // 書影がなければGoogle Books埋め込みURLで補完（APIクォータ不要）
+          if (!primary.coverUrl) {
+            primary.coverUrl = getBookCover(isbn) || undefined;
+          }
+
+          return ndlResults;
         }
-        results.push(openbd);
+
+        // NDL失敗→OpenBDフォールバック
+        if (openbd) {
+          log(`OpenBDフォールバック: ${openbd.title}`);
+          return [openbd];
+        }
       }
 
-      // Google Booksの結果も追加（重複タイトル除外）
-      for (const gb of gbResults) {
-        if (!results.some((r) => r.title === gb.title)) {
-          results.push(gb);
-        }
+      // 外国語書籍 or 日本語でNDL/OpenBD失敗: Google Booksへ
+      log("Google Books ISBN検索...");
+      const gbResults = await searchGoogleBooksByISBN(isbn).catch(() => []);
+      if (gbResults.length > 0) {
+        log(`Google Booksヒット: ${gbResults.length}件`);
+        return gbResults;
       }
 
-      if (results.length > 0) {
-        for (const r of results) {
-          log(`候補: "${r.title}" isbn=${r.isbn ?? "なし"} cover=${r.coverUrl ? "あり" : "なし"}`);
+      // 最終フォールバック: NDL（外国語書籍でも日本の図書館にある場合）
+      if (!isJapanese) {
+        const ndlFallback = await searchNDLByISBN(isbn).catch(() => []);
+        if (ndlFallback.length > 0) {
+          log(`NDLフォールバック: ${ndlFallback[0].title}`);
+          return ndlFallback;
         }
-        return results;
-      }
-
-      // 3. NDL（国立国会図書館）
-      log("NDL ISBN検索...");
-      const ndlResults = await searchNDLByISBN(isbn).catch(() => []);
-      if (ndlResults.length > 0) {
-        log(`NDLヒット: ${ndlResults[0].title}`);
-        return ndlResults;
       }
 
       log("ISBN検索: 全API該当なし");
@@ -210,17 +221,32 @@ export function CaptureHub() {
           }
         }
 
-        // タイトル/著者で段階的に検索
+        // タイトル/著者で段階的に検索（NDL優先）
         setStepLabel(STEPS[2]);
-        const queries = [
-          [title, author].filter(Boolean).join(" "),
+        const titleQueries = [
           title,
-          // タイトルが長い場合、前半だけで検索
           title && title.length > 10 ? title.slice(0, Math.ceil(title.length / 2)) : "",
+        ].filter((q) => q.length > 1);
+
+        // 1. NDL最優先（日本語書籍のメタデータが最もリッチ）
+        for (const q of titleQueries) {
+          log(`NDL: "${q}"`);
+          const ndlResults = await searchNDL(q).catch(() => []);
+          if (ndlResults.length > 0) {
+            log(`NDLヒット: ${ndlResults.length}件`);
+            showResults(ndlResults);
+            return;
+          }
+        }
+
+        // 2. Google Booksフォールバック
+        const gbQueries = [
+          [title, author].filter(Boolean).join(" "),
+          ...titleQueries,
           author,
         ].filter((q) => q.length > 1);
 
-        for (const q of queries) {
+        for (const q of gbQueries) {
           log(`Google Books: "${q}"`);
           const results = await searchGoogleBooks(q);
           if (results.length > 0) {
@@ -230,16 +256,6 @@ export function CaptureHub() {
           }
         }
 
-        // NDLフォールバック（タイトルのみ）
-        if (title) {
-          log(`NDL検索: "${title}"`);
-          const ndlResults = await searchNDL(title).catch(() => []);
-          if (ndlResults.length > 0) {
-            log(`NDLヒット: ${ndlResults.length}件`);
-            showResults(ndlResults);
-            return;
-          }
-        }
         log("全検索パターン: 該当なし");
       } else {
         const err = await res.text();
@@ -262,18 +278,22 @@ export function CaptureHub() {
     log(`手動検索: "${query}"`);
 
     try {
-      // Google Books → NDLフォールバック
+      // NDL最優先 → Google Booksフォールバック
+      const ndlResults = await searchNDL(query);
+      if (ndlResults.length > 0) {
+        log(`NDL: ${ndlResults.length}件`);
+        showResults(ndlResults, query);
+        return;
+      }
+
+      log("NDL: 該当なし、Google Books検索...");
       const gbResults = await searchGoogleBooks(query);
       if (gbResults.length > 0) {
         log(`Google Books: ${gbResults.length}件`);
         showResults(gbResults, query);
         return;
       }
-
-      log("Google Books: 該当なし、NDL検索...");
-      const ndlResults = await searchNDL(query);
-      log(`NDL: ${ndlResults.length}件`);
-      showResults(ndlResults.length > 0 ? ndlResults : [], query);
+      showResults([], query);
     } catch (e) {
       log(`検索エラー: ${e}`);
       showResults([], query);
