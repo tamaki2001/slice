@@ -156,6 +156,11 @@ export function ReflectionPage({
     setComposerOpen(true);
   }, []);
 
+  const handleCancelInline = useCallback(() => {
+    setActiveQuoteId(undefined);
+    setComposerOpen(false);
+  }, []);
+
   // 書誌データ更新: 現在無効化中
   // 初回登録時にNDLからリッチなデータが入るため不要
 
@@ -209,6 +214,21 @@ export function ReflectionPage({
         <SliceThread
           slices={slices}
           scrolling={scrolling}
+          activeQuoteId={activeQuoteId}
+          inlineComposer={
+            activeQuoteId && composerOpen ? (
+              <SliceComposer
+                bookId={currentBook.id}
+                activeQuoteId={activeQuoteId}
+                expanded
+                inline
+                onExpandChange={setComposerOpen}
+                onFocusChange={setFocusMode}
+                onCancel={handleCancelInline}
+                onSubmitPair={handleSubmitPair}
+              />
+            ) : undefined
+          }
           onReplyToQuote={handleReplyToQuote}
           onDelete={handleDelete}
           onEdit={handleEdit}
@@ -216,14 +236,16 @@ export function ReflectionPage({
         <div ref={bottomRef} />
       </main>
 
-      <SliceComposer
-        bookId={currentBook.id}
-        activeQuoteId={activeQuoteId}
-        expanded={composerOpen}
-        onExpandChange={setComposerOpen}
-        onFocusChange={setFocusMode}
-        onSubmitPair={handleSubmitPair}
-      />
+      {/* 新規モード（activeQuoteIdなし）: 画面下部 */}
+      {!activeQuoteId && (
+        <SliceComposer
+          bookId={currentBook.id}
+          expanded={composerOpen}
+          onExpandChange={setComposerOpen}
+          onFocusChange={setFocusMode}
+          onSubmitPair={handleSubmitPair}
+        />
+      )}
 
       <BookDetailSheet
         book={currentBook}

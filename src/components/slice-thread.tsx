@@ -287,12 +287,16 @@ function buildThreads(slices: Slice[]): ThreadItem[] {
 export function SliceThread({
   slices,
   scrolling = false,
+  activeQuoteId,
+  inlineComposer,
   onReplyToQuote,
   onDelete,
   onEdit,
 }: {
   slices: Slice[];
   scrolling?: boolean;
+  activeQuoteId?: string;
+  inlineComposer?: React.ReactNode;
   onReplyToQuote?: (quoteId: string) => void;
   onDelete?: (sliceId: string) => void;
   onEdit?: (sliceId: string, body: string, reference?: string) => void;
@@ -347,6 +351,10 @@ export function SliceThread({
                     onEdit={(text) => onEdit?.(r.id, text)}
                   />
                 ))}
+                {/* インラインComposer: この引用に追記中 */}
+                {activeQuoteId === item.quote.id && inlineComposer && (
+                  <div className="pl-8">{inlineComposer}</div>
+                )}
               </div>
             );
           }

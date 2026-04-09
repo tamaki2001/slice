@@ -19,15 +19,19 @@ export function SliceComposer({
   bookId,
   activeQuoteId,
   expanded,
+  inline,
   onExpandChange,
   onFocusChange,
+  onCancel,
   onSubmitPair,
 }: {
   bookId: string;
   activeQuoteId?: string;
   expanded: boolean;
+  inline?: boolean;
   onExpandChange: (open: boolean) => void;
   onFocusChange?: (focused: boolean) => void;
+  onCancel?: () => void;
   onSubmitPair: (data: ComposerSubmission) => void;
 }) {
   const [reflection, setReflection] = useState("");
@@ -41,14 +45,18 @@ export function SliceComposer({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (expanded) {
+    if (expanded || inline) {
       haptic("light");
-      requestAnimationFrame(() => reflectionRef.current?.focus());
+      requestAnimationFrame(() => {
+        reflectionRef.current?.focus();
+        if (inline) {
+          composerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      });
     } else {
-      // 閉じた時にキャッシュ破棄
       setLastCapturedImage(null);
     }
-  }, [expanded]);
+  }, [expanded, inline]);
 
   useEffect(() => {
     for (const ref of [reflectionRef, quoteRef]) {
@@ -80,6 +88,8 @@ export function SliceComposer({
     setQuote("");
     setReflection("");
     setReference("");
+    setLastCapturedImage(null);
+    onCancel?.();
     setLastCapturedImage(null);
   }, [quote, reflection, reference, onSubmitPair]);
 
@@ -165,7 +175,7 @@ export function SliceComposer({
     }, 200);
   }, [reflection, quote, ocrLoading, onExpandChange, onFocusChange]);
 
-  if (!expanded) {
+  if (!expanded && !inline) {
     return (
       <div className="border-t border-stone-200 bg-background pb-[env(safe-area-inset-bottom,0.5rem)]">
         <button
@@ -185,7 +195,11 @@ export function SliceComposer({
   return (
     <div
       ref={composerRef}
-      className="border-t border-stone-200 bg-background pb-[env(safe-area-inset-bottom,0.5rem)]"
+      className={
+        inline
+          ? "bg-background py-2"
+          : "border-t border-stone-200 bg-background pb-[env(safe-area-inset-bottom,0.5rem)]"
+      }
     >
       <input
         ref={fileInputRef}
@@ -297,8 +311,17 @@ export function SliceComposer({
           </div>
         </div>
 
-        {/* 保存ボタン */}
-        <div className="flex justify-end">
+        {/* 保存 / キャンセル */}
+        <div className="flex justify-end gap-4">
+          {inline && onCancel && (
+            <button
+              type="button"
+              onClick={onCancel}
+              className="font-sans text-sm tracking-widest text-stone-300 active:text-stone-500 transition-colors"
+            >
+              取消
+            </button>
+          )}
           <button
             type="button"
             onClick={handleSubmit}
