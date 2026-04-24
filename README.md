@@ -24,7 +24,7 @@
 - [Tailwind CSS v4](https://tailwindcss.com) + [shadcn/ui](https://ui.shadcn.com)
 - [Supabase](https://supabase.com) (テーブルは `sl_` プレフィックスで分離)
 - [framer-motion](https://www.framer.com/motion/) — 画面遷移アニメーション
-- [@anthropic-ai/sdk](https://github.com/anthropics/anthropic-sdk-typescript) / Google Generative AI — OCR & 書籍認識
+- Google Generative AI (Gemini) — OCR & 書籍認識
 - [lucide-react](https://lucide.dev) — アイコン (使用は最小限)
 
 > Note: このリポジトリの Next.js は breaking changes を含んだ新しい版です。コードを書く前に `node_modules/next/dist/docs/` のガイドを確認してください。詳細は [AGENTS.md](./AGENTS.md) を参照。

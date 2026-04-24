@@ -110,10 +110,6 @@ export async function POST(req: NextRequest) {
       console.log("[recognize] JSON抽出完全失敗");
       return NextResponse.json({ title: "", author: "", isbn: "", raw: textSource.slice(0, 300) });
     }
-    if (!match) {
-      console.log("[recognize] JSON抽出失敗。応答:", textSource.slice(0, 200));
-      return NextResponse.json({ title: "", author: "", isbn: "", raw: textSource.slice(0, 200) });
-    }
 
     try {
       const parsed = JSON.parse(match[0]);
