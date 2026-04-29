@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Camera, Loader2, X, RefreshCw } from "lucide-react";
+import { Camera, Loader2, X, RefreshCw, Mic, Square } from "lucide-react";
 import { imageFileToBase64 } from "@/lib/ocr";
+import { useSpeechRecognition } from "@/lib/use-speech-recognition";
 import type { Slice } from "@/lib/types";
 
 export type ComposerSubmission = {
@@ -43,10 +44,52 @@ export function SliceComposer({
   const [location, setLocation] = useState("");
   const [ocrLoading, setOcrLoading] = useState(false);
   const [lastCapturedImage, setLastCapturedImage] = useState<string | null>(null);
+  const [cleaningSpeech, setCleaningSpeech] = useState(false);
   const reflectionRef = useRef<HTMLTextAreaElement>(null);
   const quoteRef = useRef<HTMLTextAreaElement>(null);
   const composerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // 音声認識（独語モードのみ）
+  const speech = useSpeechRecognition("ja-JP");
+  const isRecording = speech.state === "recording";
+  const speechSupported = speech.state !== "unsupported";
+
+  // ── 録音停止 → フィラー除去 → reflection に流し込む ──
+  const handleStopRecording = useCallback(async () => {
+    speech.stop();
+    const raw = (speech.accumulated + (speech.interim ? " " + speech.interim : "")).trim();
+    if (!raw) return;
+
+    setCleaningSpeech(true);
+    haptic("light");
+    try {
+      const res = await fetch("/api/clean-speech", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ transcript: raw }),
+      });
+      if (!res.ok) throw new Error("整形失敗");
+      const { text } = await res.json();
+      const cleaned = (text as string) || raw;
+      // 既存のreflectionに追記する形（複数回録音できるように）
+      setReflection((prev) => (prev ? prev + "\n\n" + cleaned : cleaned));
+      onExpandChange(true);
+      haptic("medium");
+      requestAnimationFrame(() => reflectionRef.current?.focus());
+    } catch {
+      // フォールバック: 生テキストをそのまま流し込む
+      setReflection((prev) => (prev ? prev + "\n\n" + raw : raw));
+      onExpandChange(true);
+    } finally {
+      setCleaningSpeech(false);
+    }
+  }, [speech, onExpandChange]);
+
+  const handleStartRecording = useCallback(() => {
+    haptic("medium");
+    speech.start();
+  }, [speech]);
 
   useEffect(() => {
     if (expanded || inline) {
@@ -188,16 +231,79 @@ export function SliceComposer({
     }, 200);
   }, [reflection, quote, ocrLoading, onExpandChange, onFocusChange]);
 
+  // ── 録音中・整形中の表示（独語モード時、collapsedでも展開状態でも） ──
+  if (monologueMode && (isRecording || cleaningSpeech)) {
+    return (
+      <div className="border-t border-stone-200 bg-background pb-[env(safe-area-inset-bottom,0.5rem)]">
+        <div className="px-6 py-5 space-y-3">
+          {isRecording ? (
+            <>
+              <div className="flex items-center gap-3">
+                <span className="size-2 rounded-full bg-stone-500 animate-pulse" />
+                <span className="font-sans text-xs tracking-widest text-stone-500">
+                  録音中
+                </span>
+              </div>
+              {(speech.accumulated || speech.interim) && (
+                <p className="font-serif text-sm leading-relaxed text-stone-400 line-clamp-3 whitespace-pre-wrap">
+                  {speech.accumulated}
+                  {speech.interim && (
+                    <span className="text-stone-300"> {speech.interim}</span>
+                  )}
+                </p>
+              )}
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={handleStopRecording}
+                  aria-label="録音を止める"
+                  className="
+                    size-11 flex items-center justify-center
+                    text-stone-500 active:text-stone-700
+                  "
+                >
+                  <Square size={16} strokeWidth={1.5} fill="currentColor" />
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="flex items-center gap-3 py-2">
+              <Loader2 size={14} className="animate-spin text-stone-400" />
+              <span className="font-serif text-sm text-stone-400 animate-pulse">
+                フィラーを除去中...
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   if (!expanded && !inline) {
     return (
       <div className="border-t border-stone-200 bg-background pb-[env(safe-area-inset-bottom,0.5rem)]">
-        <button
-          type="button"
-          onClick={() => onExpandChange(true)}
-          className="w-full px-6 py-4 text-left font-serif text-base text-stone-300"
-        >
-          {monologueMode ? "独語を書き留める..." : "思索を書き留める..."}
-        </button>
+        <div className="flex items-center">
+          <button
+            type="button"
+            onClick={() => onExpandChange(true)}
+            className="flex-1 px-6 py-4 text-left font-serif text-base text-stone-300"
+          >
+            {monologueMode ? "独語を書き留める..." : "思索を書き留める..."}
+          </button>
+          {monologueMode && speechSupported && (
+            <button
+              type="button"
+              onClick={handleStartRecording}
+              aria-label="録音を始める"
+              className="
+                size-12 mr-3 flex items-center justify-center
+                text-stone-400 active:text-stone-600
+              "
+            >
+              <Mic size={18} strokeWidth={1.5} />
+            </button>
+          )}
+        </div>
       </div>
     );
   }
@@ -348,7 +454,20 @@ export function SliceComposer({
         )}
 
         {/* 保存 / キャンセル */}
-        <div className="flex justify-end gap-4">
+        <div className="flex items-center justify-end gap-4">
+          {monologueMode && speechSupported && (
+            <button
+              type="button"
+              onClick={handleStartRecording}
+              aria-label="録音を始める"
+              className="
+                size-9 mr-auto flex items-center justify-center
+                text-stone-400 active:text-stone-600
+              "
+            >
+              <Mic size={16} strokeWidth={1.5} />
+            </button>
+          )}
           {inline && onCancel && (
             <button
               type="button"
