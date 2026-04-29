@@ -11,6 +11,7 @@ import { createBook, findBookByTitle } from "@/lib/db";
 import { captureFrameAsBase64 } from "@/lib/ocr";
 import { startBarcodeScanner } from "@/lib/barcode";
 import type { BookCandidate } from "@/lib/types";
+import { MONOLOGUE_BOOK_ID } from "@/lib/types";
 import { CandidateList } from "./candidate-list";
 
 type Phase = "camera" | "analyzing" | "candidates" | "manual";
@@ -359,6 +360,16 @@ export function CaptureHub() {
       {/* ── カメラ画面 ── */}
       {phase === "camera" && (
         <div className="flex-1 flex flex-col px-8 gap-6">
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => { stopCamera(); router.push(`/book/${MONOLOGUE_BOOK_ID}`); }}
+              className="font-sans text-sm tracking-widest text-stone-300 active:text-stone-500 transition-colors"
+            >
+              独語
+            </button>
+          </div>
+
           <div className="aspect-[3/4] bg-stone-200 overflow-hidden relative">
             <video
               ref={videoRef}

@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { Camera, Trash2 } from "lucide-react";
 import { deleteBook } from "@/lib/db";
 import { DeleteSliceDialog } from "./delete-slice-dialog";
-import { isMonologueBook } from "@/lib/types";
 import type { BookWithPreview, TimelineEntry } from "@/lib/types";
 
 const SESSION_GAP_MS = 6 * 60 * 60 * 1000; // 6時間
@@ -144,31 +143,6 @@ function SliceRow({
   );
 }
 
-/* ── 独語ピン（常時表示） ── */
-
-function MonologuePin({ book }: { book: BookWithPreview }) {
-  return (
-    <Link
-      href={`/book/${book.id}`}
-      className="flex items-center gap-5 px-8 pt-8 pb-4"
-    >
-      <img
-        src={book.coverUrl}
-        alt=""
-        className="w-12 h-18 object-contain flex-shrink-0 opacity-80"
-      />
-      <div className="flex-1 min-w-0">
-        <h2 className="font-sans text-lg font-medium text-stone-800">
-          {book.title}
-        </h2>
-        <span className="font-sans text-xs tracking-widest text-stone-400 block mt-0.5">
-          {book.sliceCount > 0 ? `${book.sliceCount}件` : ""}
-        </span>
-      </div>
-    </Link>
-  );
-}
-
 /* ── メインコンポーネント ── */
 
 export function TimelinePage({
@@ -181,7 +155,6 @@ export function TimelinePage({
   const router = useRouter();
   const [books, setBooks] = useState(initialBooks);
   const [deleteTarget, setDeleteTarget] = useState<BookWithPreview | null>(null);
-  const monologueBook = books.find((b) => isMonologueBook(b));
   const [scrolling, setScrolling] = useState(false);
   const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -219,11 +192,8 @@ export function TimelinePage({
   return (
     <div className="min-h-full bg-background relative">
       <div className="pt-10 pb-32">
-        {/* 独語ピン: 常にタイムライン先頭に表示 */}
-        {monologueBook && <MonologuePin book={monologueBook} />}
-
         {isEmpty ? (
-          <div className="px-8 pt-16 text-center">
+          <div className="px-8 pt-32 text-center">
             <p className="font-serif text-lg text-stone-300">
               まだ本がありません
             </p>
