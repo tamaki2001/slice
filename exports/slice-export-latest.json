@@ -1,0 +1,488 @@
+{
+  "exportedAt": "2026-04-29T12:24:17.280Z",
+  "source": "Supabase https://rbvvraexllrnfjmeorjb.supabase.co",
+  "schema": {
+    "books": [
+      "id",
+      "title",
+      "subtitle",
+      "author",
+      "translator",
+      "publisher",
+      "published_year",
+      "isbn",
+      "cover_url",
+      "synopsis",
+      "tags",
+      "created_at"
+    ],
+    "slices": [
+      "id",
+      "book_id",
+      "type",
+      "body",
+      "reference",
+      "quote_id",
+      "location",
+      "created_at"
+    ]
+  },
+  "counts": {
+    "books": 5,
+    "slices": 38
+  },
+  "books": [
+    {
+      "id": "efc812eb-07bc-4512-bd2a-0f35290752f4",
+      "title": "NEXUS : 情報の人類史. 上",
+      "subtitle": null,
+      "author": "Harari,YuvalN.,1976- 柴田,裕之,1959-",
+      "translator": null,
+      "cover_url": "https://books.google.com/books/content?vid=ISBN9784309229430&printsec=frontcover&img=1&zoom=1",
+      "synopsis": null,
+      "tags": [],
+      "created_at": "2026-04-06T23:39:48.033548+00:00",
+      "publisher": null,
+      "published_year": null,
+      "isbn": null
+    },
+    {
+      "id": "23d2767c-2ca7-4847-893d-4cf6e6f203a3",
+      "title": "強いビジネスパーソンを目指して鬱になった僕の 弱さ考",
+      "subtitle": null,
+      "author": "井上慎平",
+      "translator": null,
+      "cover_url": "https://books.google.com/books/content?vid=ISBN9784478120378&printsec=frontcover&img=1&zoom=1",
+      "synopsis": null,
+      "tags": [],
+      "created_at": "2026-04-07T00:10:24.285472+00:00",
+      "publisher": "ダイヤモンド社",
+      "published_year": "2025",
+      "isbn": "9784478120378"
+    },
+    {
+      "id": "7e46ea6d-d070-4ed4-84f5-84579b9efdb4",
+      "title": "さみしくてごめん",
+      "subtitle": null,
+      "author": "永井玲衣",
+      "translator": null,
+      "cover_url": "https://books.google.com/books/content?vid=ISBN9784479394532&printsec=frontcover&img=1&zoom=1",
+      "synopsis": null,
+      "tags": [],
+      "created_at": "2026-04-08T00:51:21.996056+00:00",
+      "publisher": "大和書房",
+      "published_year": "2025",
+      "isbn": "9784479394532"
+    },
+    {
+      "id": "8412c4a7-9a8d-4c12-87cd-fc73741ffe05",
+      "title": "不完全主義",
+      "subtitle": null,
+      "author": "Burkeman Oliver",
+      "translator": null,
+      "cover_url": "https://books.google.com/books/content?vid=ISBN9784761278144&printsec=frontcover&img=1&zoom=1",
+      "synopsis": null,
+      "tags": [],
+      "created_at": "2026-04-26T12:33:55.230021+00:00",
+      "publisher": "かんき出版",
+      "published_year": "2025",
+      "isbn": "9784761278144"
+    },
+    {
+      "id": "00000000-0000-0000-0000-000000000001",
+      "title": "独語",
+      "subtitle": null,
+      "author": "浅野智明",
+      "translator": null,
+      "cover_url": "/monologue-cover.svg",
+      "synopsis": "本をきっかけに飛び立っていく、拡散する思考の容器。",
+      "tags": [],
+      "created_at": "2026-04-29T11:37:42.734099+00:00",
+      "publisher": null,
+      "published_year": null,
+      "isbn": null
+    }
+  ],
+  "slices": [
+    {
+      "id": "5ac11a28-6c37-4694-96ad-7ba405f3f13a",
+      "book_id": "23d2767c-2ca7-4847-893d-4cf6e6f203a3",
+      "type": "reflection",
+      "body": "書き手は元（？）編集者にして双極性障害の当事者。それだけでも読む価値がある。",
+      "reference": null,
+      "created_at": "2026-04-07T00:35:20.824896+00:00",
+      "quote_id": null,
+      "location": null
+    },
+    {
+      "id": "f0dbb7fb-aaaf-451b-99c5-770dea9d4a5f",
+      "book_id": "23d2767c-2ca7-4847-893d-4cf6e6f203a3",
+      "type": "reflection",
+      "body": "このところ、のんちゃんに自分軸などと「正しさ」ばかりを押し付けていて、「弱さ」について考えることがなかった。軽躁というのもあったろうが、あまりに無神経な態度であった。考えてみれば、由美ちゃんだって「弱い人」なのだ。",
+      "reference": null,
+      "created_at": "2026-04-07T02:53:11.013673+00:00",
+      "quote_id": null,
+      "location": null
+    },
+    {
+      "id": "fed27226-57e9-4dfd-a90b-1d877d6745a4",
+      "book_id": "23d2767c-2ca7-4847-893d-4cf6e6f203a3",
+      "type": "quote",
+      "body": "コントロールが効かない脳になって、僕は理性の働きを失った。過去の自分なら理性を発揮できていたとしたら、たまたま余裕があったから、幸運だったからにすぎない。\n「自分にも他人にも、あまり理性を求めない」\n「非理性的に聞こえる『弱音』にも、ちゃんと居場所を与える」\n僕がいま大事にしているこれらの方針は、理性が長い間お留守にしていたこの頃の経験からきている。",
+      "reference": null,
+      "created_at": "2026-04-07T10:20:55.539088+00:00",
+      "quote_id": null,
+      "location": null
+    },
+    {
+      "id": "1f3bec45-f76e-459f-b191-4bf019ffdbab",
+      "book_id": "23d2767c-2ca7-4847-893d-4cf6e6f203a3",
+      "type": "reflection",
+      "body": "自分は（とりわけ他人の）「非合理性」とか「負の感情」とか「愚行」に居場所を与えているだろうか？",
+      "reference": null,
+      "created_at": "2026-04-07T10:22:14.805038+00:00",
+      "quote_id": "fed27226-57e9-4dfd-a90b-1d877d6745a4",
+      "location": null
+    },
+    {
+      "id": "3cdd1e82-976b-4c94-839c-1d803ad30a02",
+      "book_id": "7e46ea6d-d070-4ed4-84f5-84579b9efdb4",
+      "type": "reflection",
+      "body": "この人の読む本はセンスのいいものばかり。",
+      "reference": null,
+      "created_at": "2026-04-08T00:52:13.44252+00:00",
+      "quote_id": null,
+      "location": null
+    },
+    {
+      "id": "4b11b2b6-0913-42ba-9583-183c98aa1c44",
+      "book_id": "7e46ea6d-d070-4ed4-84f5-84579b9efdb4",
+      "type": "reflection",
+      "body": "「普通はさぁ」と言いたくなったら、「普通の人はさぁ」と言い換えてみる。するとそこに「はて、自分は『普通の人』だったろうか？」という問いが生まれて、少し「普通」を対象化できる、ような気がする。",
+      "reference": null,
+      "created_at": "2026-04-08T01:01:48.312036+00:00",
+      "quote_id": null,
+      "location": null
+    },
+    {
+      "id": "af806f61-d151-4c5d-939f-0ec2b9c3bcf3",
+      "book_id": "7e46ea6d-d070-4ed4-84f5-84579b9efdb4",
+      "type": "reflection",
+      "body": "この人みたいに、この本みたいに日記を書けたらいいのに。あとで読み返しても楽しいし、自分に正直。あと、その日読んだ本を必ず書き留めているのがいい。",
+      "reference": null,
+      "created_at": "2026-04-08T01:19:07.762208+00:00",
+      "quote_id": null,
+      "location": null
+    },
+    {
+      "id": "9ee17b8d-87da-4d64-9356-b61b944be3c8",
+      "book_id": "7e46ea6d-d070-4ed4-84f5-84579b9efdb4",
+      "type": "quote",
+      "body": "突然このひとのためにこの仕事をめちゃくちゃ頑張りたい、と力がみなぎるのを感じる。だが、妙なポイントでやる気が出るようなマネジメントが難しい人間と思われたくなくて、言うのを我慢する。",
+      "reference": null,
+      "created_at": "2026-04-08T01:23:11.847939+00:00",
+      "quote_id": null,
+      "location": null
+    },
+    {
+      "id": "b359508f-f1c0-48c8-a342-d52135275777",
+      "book_id": "7e46ea6d-d070-4ed4-84f5-84579b9efdb4",
+      "type": "reflection",
+      "body": "こういうことってあるような気がする。そして、仕事に行き詰まったとき、この日のことを思い出してモチベーションを上げるのだ。",
+      "reference": null,
+      "created_at": "2026-04-08T01:23:12.03444+00:00",
+      "quote_id": "9ee17b8d-87da-4d64-9356-b61b944be3c8",
+      "location": null
+    },
+    {
+      "id": "9f7d36d9-2559-45e0-bf64-2dd8005fcfbd",
+      "book_id": "7e46ea6d-d070-4ed4-84f5-84579b9efdb4",
+      "type": "quote",
+      "body": "火曜日\n\nすぐお皿をお下げしようとする店員さんと戦う。",
+      "reference": "70",
+      "created_at": "2026-04-08T01:25:50.761383+00:00",
+      "quote_id": null,
+      "location": null
+    },
+    {
+      "id": "b87b08d1-b4f3-40f5-b553-feffb14bba52",
+      "book_id": "7e46ea6d-d070-4ed4-84f5-84579b9efdb4",
+      "type": "reflection",
+      "body": "日記って、こんな一行だけで宝石みたいな記録になる。",
+      "reference": null,
+      "created_at": "2026-04-08T01:25:51.082082+00:00",
+      "quote_id": "9f7d36d9-2559-45e0-bf64-2dd8005fcfbd",
+      "location": null
+    },
+    {
+      "id": "26322950-83e0-41a4-be15-837e8c0c8907",
+      "book_id": "7e46ea6d-d070-4ed4-84f5-84579b9efdb4",
+      "type": "quote",
+      "body": "ジレンマ問題は、決め難いからこそジレンマなのであり、それでもなお、考えることを試みることが哲学なのだろう。\n\nだがどこか、批評や哲学というものを考えるとき、この情景が何度も浮かんでしまう。見ることの、しびれるほどの快楽。そしてその危うさ。\n\nわたしは恐れているのだ。",
+      "reference": "112",
+      "created_at": "2026-04-08T07:11:53.398845+00:00",
+      "quote_id": null,
+      "location": null
+    },
+    {
+      "id": "0a166eb3-1dd8-4167-bd08-02c7a7f2a669",
+      "book_id": "7e46ea6d-d070-4ed4-84f5-84579b9efdb4",
+      "type": "reflection",
+      "body": "しびれるほどの快楽に堕すことは、（自分の場合）本当によくある。それの何が悪いのか、まだよくわからない。",
+      "reference": null,
+      "created_at": "2026-04-08T07:13:23.437749+00:00",
+      "quote_id": null,
+      "location": null
+    },
+    {
+      "id": "fd935390-75a7-43b1-a2e0-fc030466d03f",
+      "book_id": "7e46ea6d-d070-4ed4-84f5-84579b9efdb4",
+      "type": "quote",
+      "body": "この問いもまた、わたしたちに覆いかぶさってくる。何かについて語ることが批評なのだとしたら、それを語る主体は誰なのか、その対象についてどのような距離を持っているのかに自覚的でなければならない。自分はどこに根差しているのか、どのような状況からそれが語られるのかを、鋭く自らに問わなければならない。\n\nそうなれば、何かを語るとき、何かを論じるとき、何かを見ようとするとき、そこには問いが跳ね返ってくる。目を思わずつむってしまいそうな問いだ。冷たい泥水が顔にかかるような、そんなやるせない問いだ。\n\n見るためには、それを見るこのわたしがいかなる場所で、いかなる者としてあるのかを、問わざるを得なくなる。批評や哲学は、まずもって自己の吟味から離れることはできない。しかしこれは困難な問いである。\n\n根差すとは何か。自らの階級なのか、属性なのか。社会的な立ち位置なのか、それとも実存のあり方なのか。それらは複雑に絡み合い、何かを決めてしまえば、何かが抜け落ちてしまう。自分を見ることはできない。物理的にも、抽象的な意味でも、それは困難である。見るこのわたしとは誰なのか。どこに立っているのか。",
+      "reference": "114",
+      "created_at": "2026-04-08T07:17:01.260744+00:00",
+      "quote_id": null,
+      "location": null
+    },
+    {
+      "id": "03ca10fe-d4ad-43cb-8097-f55eb56bf17c",
+      "book_id": "7e46ea6d-d070-4ed4-84f5-84579b9efdb4",
+      "type": "quote",
+      "body": "見ることは固定することだが、聴くことは変容させられてしまうことだ。揺るがないものはもうあまり興味がない。わたしはもう欲しくないのかもしれない。むしろ、そうではない、あたふたとよろめいているような批評、そしてそれは決して批評とは呼ばれなかったかもしれない何か、そのようなものに惹かれる。自分が誰だかわからなくなりながら、それでもどの場所からそれを語ろうとしているのかを描こうと奮闘する、そんな言葉を愛する。",
+      "reference": "117",
+      "created_at": "2026-04-08T07:22:18.61736+00:00",
+      "quote_id": null,
+      "location": null
+    },
+    {
+      "id": "10893c18-8925-4b07-ba8e-9b34fc6e5514",
+      "book_id": "7e46ea6d-d070-4ed4-84f5-84579b9efdb4",
+      "type": "quote",
+      "body": "見ることは固定することだが、聴くことは変容させられてしまうことだ。揺るがないものはもうあまり興味がない。わたしはもう欲しくないのかもしれない。むしろ、そうではない、あたふたとよろめいているような批評、そしてそれは決して批評とは呼ばれなかったかもしれない何か、そのようなものに惹かれる。自分が誰だかわからなくなりながら、それでもどの場所からそれを語ろうとしているのかを描こうと奮闘する、そんな言葉を愛する。",
+      "reference": "117",
+      "created_at": "2026-04-08T08:14:27.276654+00:00",
+      "quote_id": null,
+      "location": null
+    },
+    {
+      "id": "e98367c1-45dd-4329-817c-3fa3b0c6e806",
+      "book_id": "7e46ea6d-d070-4ed4-84f5-84579b9efdb4",
+      "type": "quote",
+      "body": "一方的にまなざしをむけることは、快楽である。まなざしの相手を凝固させて、認識のもとに置くことができれば、それはより享楽的なものになる。だがそれは危険なことでもある。世界と関係するために試みたことが、世界とわたしの切り離しへと滑り落ちる可能性がある。",
+      "reference": null,
+      "created_at": "2026-04-08T08:39:22.140538+00:00",
+      "quote_id": null,
+      "location": null
+    },
+    {
+      "id": "87ad712e-ccd2-460a-88a0-3352df59b934",
+      "book_id": "7e46ea6d-d070-4ed4-84f5-84579b9efdb4",
+      "type": "reflection",
+      "body": "視線の権力性。",
+      "reference": null,
+      "created_at": "2026-04-08T08:39:22.453459+00:00",
+      "quote_id": "e98367c1-45dd-4329-817c-3fa3b0c6e806",
+      "location": null
+    },
+    {
+      "id": "a650eb10-7284-4460-8ae7-3cc576e70525",
+      "book_id": "7e46ea6d-d070-4ed4-84f5-84579b9efdb4",
+      "type": "quote",
+      "body": "聴くことへの気づきは、他者の存在への気づきである。わたしとは異なる、ぬめりとした不快な何かが、たしかに傍にいるということへの感覚である。思わぬことを問いかけられ、言葉に詰まる。わたしも知らない言葉が引き出される。",
+      "reference": "122",
+      "created_at": "2026-04-08T08:51:32.954157+00:00",
+      "quote_id": null,
+      "location": null
+    },
+    {
+      "id": "b2a78e38-ee15-4d74-a233-3cc6335bf9bf",
+      "book_id": "7e46ea6d-d070-4ed4-84f5-84579b9efdb4",
+      "type": "reflection",
+      "body": "自分に足りないのはこれであった。主体性（権力性）にこだわるばかりに、他者性に気づけなかった。",
+      "reference": null,
+      "created_at": "2026-04-08T08:51:33.168287+00:00",
+      "quote_id": "a650eb10-7284-4460-8ae7-3cc576e70525",
+      "location": null
+    },
+    {
+      "id": "d677cbde-8fef-4885-8b3d-67a34db69777",
+      "book_id": "23d2767c-2ca7-4847-893d-4cf6e6f203a3",
+      "type": "quote",
+      "body": "ヒトは、結婚・昇進などの喜ばしい変化をも脳が「ストレスだ」と認識してしまうほどに、変化を好まない生き物だ。できれば、変化なんかしたくない。けれど「同じ自分のままでいてはいけない」と、加速する社会はささやく。\n\nそしてこの「加速する社会」についていくため、現代人は「成長意欲が高く、変化を歓迎する強い自分」をつくりあげてきた。",
+      "reference": "92",
+      "created_at": "2026-04-08T10:03:13.186879+00:00",
+      "quote_id": null,
+      "location": null
+    },
+    {
+      "id": "fa7620b6-4ad8-4353-8ac1-38f97366733a",
+      "book_id": "23d2767c-2ca7-4847-893d-4cf6e6f203a3",
+      "type": "reflection",
+      "body": "これまでのまとめ。\n自分もまあ、そうなってるよね。",
+      "reference": null,
+      "created_at": "2026-04-08T10:03:13.559125+00:00",
+      "quote_id": "d677cbde-8fef-4885-8b3d-67a34db69777",
+      "location": null
+    },
+    {
+      "id": "128c8d8b-9e77-4d50-b1d2-b35f678a83a3",
+      "book_id": "23d2767c-2ca7-4847-893d-4cf6e6f203a3",
+      "type": "quote",
+      "body": "“修養が語り出された明治において、修養は立身出世＝成功するための手段であった。しかし、同時にそれは、「たとえ立身出世できなくとも人格や人物を磨いた満足感と爽やかさの大事を教える癒しの文化」でもあった”\n\n（大澤絢子『「修養」の日本近代』P228より）",
+      "reference": "107",
+      "created_at": "2026-04-08T10:19:43.166655+00:00",
+      "quote_id": null,
+      "location": null
+    },
+    {
+      "id": "1668f0e4-872b-4847-8582-0f8c63e86d8d",
+      "book_id": "23d2767c-2ca7-4847-893d-4cf6e6f203a3",
+      "type": "reflection",
+      "body": "この指摘はすごく大事。つまり、「努力の効能は二つある」ということ。このことに自覚的であるだけで、努力感が全然変わってくる。\n\nいや、これは誤読だった。努力はそれそのものが癒しになる。ということは、努力そのものが自己目的化しうるということだ。",
+      "reference": null,
+      "created_at": "2026-04-08T10:19:43.477061+00:00",
+      "quote_id": "128c8d8b-9e77-4d50-b1d2-b35f678a83a3",
+      "location": null
+    },
+    {
+      "id": "ac36c16a-9672-4f4d-b4b7-e3f978271d78",
+      "book_id": "23d2767c-2ca7-4847-893d-4cf6e6f203a3",
+      "type": "reflection",
+      "body": "私は、「努力」を「好奇心」に置き換えられないだろうか。",
+      "reference": null,
+      "created_at": "2026-04-08T10:23:43.71048+00:00",
+      "quote_id": null,
+      "location": null
+    },
+    {
+      "id": "02f5e845-3182-4a16-b7c4-9b8c6228ef34",
+      "book_id": "23d2767c-2ca7-4847-893d-4cf6e6f203a3",
+      "type": "quote",
+      "body": "童話『裸の王様』において、大人たちは王様を「裸だ！」とは言えなかった。子どもだけが真実を言えた。幼く、怖いもの知らずだったから……というのがこの物語にまつわる通説だ。\n\nけれど、それは誤解である。実は『裸の王様』の物語は翻案されている。原作では、「裸だ！」と言うのは、馬の世話をさせられる身分の低い黒人だった。その黒人は当時、社会のヒエラルキーの外にいた。システムの外にいたのだ。僕のように。だから言えた。\n\nシステムに笑われる「敗者」が、いつのまにかシステムを笑い返す者になる。それによってシステムの中で「裸だ！」と思いつつ言えなかった大勢の人たちも、再び息を吹き返す。世の中には、敗者にしか言えないことがある。システムの外からしか、発せない言葉がある。",
+      "reference": "116",
+      "created_at": "2026-04-08T10:36:07.823343+00:00",
+      "quote_id": null,
+      "location": null
+    },
+    {
+      "id": "6059ad98-c1d1-429a-b894-86943ae4c287",
+      "book_id": "23d2767c-2ca7-4847-893d-4cf6e6f203a3",
+      "type": "reflection",
+      "body": "いい話。ネタとして覚えておこう。",
+      "reference": null,
+      "created_at": "2026-04-08T10:36:08.337697+00:00",
+      "quote_id": "02f5e845-3182-4a16-b7c4-9b8c6228ef34",
+      "location": null
+    },
+    {
+      "id": "aecd4a74-f4f6-4087-82e5-ef610dad3ffc",
+      "book_id": "23d2767c-2ca7-4847-893d-4cf6e6f203a3",
+      "type": "quote",
+      "body": "ごきげんは、「触媒的能力」そのものだ。ごきげんなだけで、周りの人は働きやすくなる。逆に、どの職場にも不機嫌な人はいる。彼らは不機嫌そうにふるまうことによって周囲をコントロールしようとしたり、自分の権威や賢さをちょっぴりアピールしたりしている。そして彼らはそのアピールに忙しいせいで、触媒的能力を発揮できない。\n\n一方、ごきげんな人は、アホっぽい。「あいつは能天気でなんにも考えてなさそうだなあ」と言われる勇気を持ったごきげんな人こそ、触媒的能力の素養がある。",
+      "reference": null,
+      "created_at": "2026-04-08T10:46:52.871512+00:00",
+      "quote_id": null,
+      "location": null
+    },
+    {
+      "id": "24c318ce-4de5-4383-9ab7-05d4779d7403",
+      "book_id": "23d2767c-2ca7-4847-893d-4cf6e6f203a3",
+      "type": "reflection",
+      "body": "cf. 鳩山くん\ncf. 井野良介さん",
+      "reference": null,
+      "created_at": "2026-04-08T10:48:21.641349+00:00",
+      "quote_id": null,
+      "location": null
+    },
+    {
+      "id": "c8f9749a-c92b-4363-8914-b93733649ec5",
+      "book_id": "23d2767c-2ca7-4847-893d-4cf6e6f203a3",
+      "type": "quote",
+      "body": "何かを変えられる自分ではなくても、そのままでいられる。その堂々とした敗者っぷりこそが、変化や課題解決に焦る現代の、精神的な意味における「強さ」なんじゃないか？ 僕たちは、そんなふうに強さと弱さの意味をズラしていくほうがいいんじゃないか？",
+      "reference": "140",
+      "created_at": "2026-04-08T11:02:43.156981+00:00",
+      "quote_id": null,
+      "location": null
+    },
+    {
+      "id": "d74c5048-5067-41c2-b10d-ec94f6253819",
+      "book_id": "23d2767c-2ca7-4847-893d-4cf6e6f203a3",
+      "type": "reflection",
+      "body": "結局、こうなるよね。堂々とアウトサイダーであること。",
+      "reference": null,
+      "created_at": "2026-04-08T11:03:38.190487+00:00",
+      "quote_id": null,
+      "location": null
+    },
+    {
+      "id": "8ca62a05-d080-4cc5-81a6-1de5de4fd988",
+      "book_id": "7e46ea6d-d070-4ed4-84f5-84579b9efdb4",
+      "type": "reflection",
+      "body": "永井玲衣の活動の淵源を示唆する断章。しかしおそらく、マッチョイズムの跋扈するアカデミズムの現場では、彼女は踏み潰されそうになる側なのではないか。",
+      "reference": null,
+      "created_at": "2026-04-08T14:25:37.394943+00:00",
+      "quote_id": "03ca10fe-d4ad-43cb-8097-f55eb56bf17c",
+      "location": null
+    },
+    {
+      "id": "c3b1066f-d0b8-47a2-99a9-abcb532b1cb9",
+      "book_id": "7e46ea6d-d070-4ed4-84f5-84579b9efdb4",
+      "type": "reflection",
+      "body": "数十年前、同じ課題に突き当たって、それを一生懸命考えていた男がいたことを、伝えたい（伝えないけど）。\nその十数年後、同じ課題を考えていることを教えてくれて、ありがとうと伝えたい（伝えないけど）。",
+      "reference": null,
+      "created_at": "2026-04-09T02:36:07.020684+00:00",
+      "quote_id": "e98367c1-45dd-4329-817c-3fa3b0c6e806",
+      "location": null
+    },
+    {
+      "id": "007de8a5-379d-469b-b110-48c99a2aaf98",
+      "book_id": "7e46ea6d-d070-4ed4-84f5-84579b9efdb4",
+      "type": "quote",
+      "body": "ここまで書いてきてわたしが言いたいことは、考えるということをひとりでやらなくてもいいんじゃないかということだ。ではどうやってやるのか。友だちでも、知らないひとでもいい。誰かと考えるのだ。たとえばカフェでやるのはどうか。",
+      "reference": "174",
+      "created_at": "2026-04-09T07:13:01.316747+00:00",
+      "quote_id": null,
+      "location": null
+    },
+    {
+      "id": "3ae44770-6c9c-4768-888f-590d2eb7b39f",
+      "book_id": "7e46ea6d-d070-4ed4-84f5-84579b9efdb4",
+      "type": "reflection",
+      "body": "この人は、考えること（＝哲学すること）を、徹底的に間主観的なものとして捉えている。",
+      "reference": null,
+      "created_at": "2026-04-09T07:14:23.881542+00:00",
+      "quote_id": "007de8a5-379d-469b-b110-48c99a2aaf98",
+      "location": null
+    },
+    {
+      "id": "130fa334-1c7f-4310-9b22-4d1bea88cfae",
+      "book_id": "8412c4a7-9a8d-4c12-87cd-fc73741ffe05",
+      "type": "quote",
+      "body": "「成功者の大半は、生産性に縛りつけられた不安障害の塊」なのだ。",
+      "reference": "6",
+      "created_at": "2026-04-26T12:35:56.773026+00:00",
+      "quote_id": null,
+      "location": null
+    },
+    {
+      "id": "87f8faaa-6bf8-4ddd-8168-dcc35c45004e",
+      "book_id": "8412c4a7-9a8d-4c12-87cd-fc73741ffe05",
+      "type": "reflection",
+      "body": "とすると、成功とは、不幸になることと同義？",
+      "reference": null,
+      "created_at": "2026-04-26T12:35:57.148175+00:00",
+      "quote_id": "130fa334-1c7f-4310-9b22-4d1bea88cfae",
+      "location": null
+    },
+    {
+      "id": "d2ac2d1e-5062-48d0-bb60-5bdf3c104f58",
+      "book_id": "00000000-0000-0000-0000-000000000001",
+      "type": "reflection",
+      "body": "超早起きによる眠気で、日中は寝たり起きたり。\nこのところ、詰め詰めで用事があったので、こういう時間は久しぶり。少しウツというか、気分が乗らない状態でもある。\nアイディアも何も浮かばないし、明日の準備をする気力もない。まあ、たまにはいいだろう。",
+      "reference": null,
+      "created_at": "2026-04-29T11:49:36.598334+00:00",
+      "quote_id": null,
+      "location": "久喜市本町３－５－８、実家"
+    }
+  ]
+}
