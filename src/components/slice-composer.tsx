@@ -7,7 +7,7 @@ import type { Slice } from "@/lib/types";
 
 export type ComposerSubmission = {
   quote?: { body: string; reference?: string };
-  reflection?: { body: string };
+  reflection?: { body: string; location?: string };
 };
 
 function haptic(style: "light" | "medium") {
@@ -20,6 +20,7 @@ export function SliceComposer({
   activeQuoteId,
   expanded,
   inline,
+  monologueMode,
   onExpandChange,
   onFocusChange,
   onCancel,
@@ -29,6 +30,8 @@ export function SliceComposer({
   activeQuoteId?: string;
   expanded: boolean;
   inline?: boolean;
+  /** 独語モード: 引用・OCR・参照ページを抑止し、場所入力に切り替える */
+  monologueMode?: boolean;
   onExpandChange: (open: boolean) => void;
   onFocusChange?: (focused: boolean) => void;
   onCancel?: () => void;
@@ -37,6 +40,7 @@ export function SliceComposer({
   const [reflection, setReflection] = useState("");
   const [quote, setQuote] = useState("");
   const [reference, setReference] = useState("");
+  const [location, setLocation] = useState("");
   const [ocrLoading, setOcrLoading] = useState(false);
   const [lastCapturedImage, setLastCapturedImage] = useState<string | null>(null);
   const reflectionRef = useRef<HTMLTextAreaElement>(null);
@@ -80,18 +84,27 @@ export function SliceComposer({
     if (!hasQuote && !hasReflection) return;
 
     onSubmitPair({
-      quote: hasQuote ? { body: quote.trim(), reference: reference.trim() || undefined } : undefined,
-      reflection: hasReflection ? { body: reflection.trim() } : undefined,
+      quote:
+        !monologueMode && hasQuote
+          ? { body: quote.trim(), reference: reference.trim() || undefined }
+          : undefined,
+      reflection: hasReflection
+        ? {
+            body: reflection.trim(),
+            location: monologueMode ? location.trim() || undefined : undefined,
+          }
+        : undefined,
     });
 
     haptic("medium");
     setQuote("");
     setReflection("");
     setReference("");
+    setLocation("");
     setLastCapturedImage(null);
     onCancel?.();
     setLastCapturedImage(null);
-  }, [quote, reflection, reference, onSubmitPair]);
+  }, [quote, reflection, reference, location, monologueMode, onSubmitPair]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
@@ -183,13 +196,15 @@ export function SliceComposer({
           onClick={() => onExpandChange(true)}
           className="w-full px-6 py-4 text-left font-serif text-base text-stone-300"
         >
-          思索を書き留める...
+          {monologueMode ? "独語を書き留める..." : "思索を書き留める..."}
         </button>
       </div>
     );
   }
 
-  const canSubmit = (quote.trim() || reflection.trim()) && !ocrLoading;
+  const canSubmit =
+    (monologueMode ? reflection.trim() : quote.trim() || reflection.trim()) &&
+    !ocrLoading;
   const hasQuoteText = quote.trim().length > 0;
 
   return (
@@ -219,7 +234,7 @@ export function SliceComposer({
           onKeyDown={handleKeyDown}
           onFocus={handleFocus}
           onBlur={handleBlur}
-          placeholder="思索を書き留める..."
+          placeholder={monologueMode ? "独語を書き留める..." : "思索を書き留める..."}
           rows={2}
           className="
             w-full resize-none bg-transparent
@@ -229,7 +244,27 @@ export function SliceComposer({
           "
         />
 
-        {/* ② 引用エリア */}
+        {/* 独語モード: 場所入力（任意） */}
+        {monologueMode && (
+          <input
+            type="text"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
+            placeholder="場所"
+            className="
+              w-full bg-transparent
+              font-sans text-sm tracking-wider
+              text-stone-500 placeholder:text-stone-300
+              border-b border-stone-200 focus:border-stone-400
+              focus:outline-none py-1
+            "
+          />
+        )}
+
+        {/* ② 引用エリア（通常モードのみ） */}
+        {!monologueMode && (
         <div className="border-l-2 border-stone-200 pl-4 relative">
           {ocrLoading ? (
             <div className="flex items-center gap-2 py-3">
@@ -310,6 +345,7 @@ export function SliceComposer({
             </button>
           </div>
         </div>
+        )}
 
         {/* 保存 / キャンセル */}
         <div className="flex justify-end gap-4">

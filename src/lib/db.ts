@@ -11,6 +11,7 @@ function toSlice(row: Record<string, unknown>): Slice {
     body: row.body as string,
     reference: (row.reference as string) ?? undefined,
     quoteId: (row.quote_id as string) ?? undefined,
+    location: (row.location as string) ?? undefined,
     createdAt: row.created_at as string,
   };
 }
@@ -223,6 +224,7 @@ export async function insertSlice(
       body: slice.body,
       reference: slice.reference ?? null,
       quote_id: slice.quoteId ?? null,
+      location: slice.location ?? null,
     })
     .select()
     .single();
@@ -234,10 +236,12 @@ export async function insertSlice(
 export async function updateSliceBody(
   id: string,
   body: string,
-  reference?: string
+  reference?: string,
+  location?: string
 ): Promise<void> {
   const update: Record<string, unknown> = { body };
   if (reference !== undefined) update.reference = reference || null;
+  if (location !== undefined) update.location = location || null;
 
   const { error } = await supabase
     .from("sl_slices")

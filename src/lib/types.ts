@@ -43,5 +43,16 @@ export type Slice = {
   reference?: string;
   /** 内省が紐づく引用のID */
   quoteId?: string;
+  /** 独語の場所メタデータ（喫茶店名・座標など、任意） */
+  location?: string;
   createdAt: string;
 };
+
+/** 独語（ひとりごと）の特殊book ID。本に紐づかない断片の容器として
+ *  sl_books 内に1冊だけ存在し、通常の本と並列に並ぶ。 */
+export const MONOLOGUE_BOOK_ID = "00000000-0000-0000-0000-000000000001";
+
+export function isMonologueBook(bookOrId: { id: string } | string): boolean {
+  const id = typeof bookOrId === "string" ? bookOrId : bookOrId.id;
+  return id === MONOLOGUE_BOOK_ID;
+}

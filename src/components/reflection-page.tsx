@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import type { Book, Slice } from "@/lib/types";
+import { isMonologueBook } from "@/lib/types";
 import { insertSlice, updateSliceBody, deleteSlice } from "@/lib/db";
 import { useRealtimeSlices } from "@/lib/use-realtime-slices";
 import { BookMiniHeader } from "./book-mini-header";
@@ -24,6 +25,7 @@ export function ReflectionPage({
   const [focusMode, setFocusMode] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [scrolling, setScrolling] = useState(false);
+  const monologueMode = isMonologueBook(currentBook);
   const bottomRef = useRef<HTMLDivElement>(null);
   const mainRef = useRef<HTMLElement>(null);
   const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -85,6 +87,7 @@ export function ReflectionPage({
           type: "reflection",
           body: data.reflection.body,
           quoteId,
+          location: data.reflection.location,
           createdAt: new Date().toISOString(),
         };
         setSlices((prev) => [...prev, tempSlice]);
@@ -95,6 +98,7 @@ export function ReflectionPage({
             type: "reflection",
             body: data.reflection.body,
             quoteId,
+            location: data.reflection.location,
           });
           setSlices((prev) => prev.map((s) => (s.id === tempId ? saved : s)));
         } catch (e) {
@@ -222,6 +226,7 @@ export function ReflectionPage({
                 activeQuoteId={activeQuoteId}
                 expanded
                 inline
+                monologueMode={monologueMode}
                 onExpandChange={setComposerOpen}
                 onFocusChange={setFocusMode}
                 onCancel={handleCancelInline}
@@ -241,6 +246,7 @@ export function ReflectionPage({
         <SliceComposer
           bookId={currentBook.id}
           expanded={composerOpen}
+          monologueMode={monologueMode}
           onExpandChange={setComposerOpen}
           onFocusChange={setFocusMode}
           onSubmitPair={handleSubmitPair}
