@@ -219,15 +219,26 @@ function ReflectionBlock({
         )}
       </div>
       {!editing && (
-        <span
+        <div
           className={`
-            font-sans text-xs tracking-widest mt-2 block text-right
+            font-sans text-xs tracking-widest mt-2 flex justify-end items-center gap-3
             transition-opacity duration-500
             ${scrolling ? "text-stone-400 opacity-60" : "text-stone-400 opacity-0 group-hover:opacity-60"}
           `}
         >
-          {formatTime(slice.createdAt)}
-        </span>
+          {slice.location && (
+            <a
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(slice.location)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="text-stone-400 hover:text-stone-600 active:text-stone-600 underline-offset-4 hover:underline tracking-wider truncate max-w-[60%]"
+            >
+              {slice.location}
+            </a>
+          )}
+          <span>{formatTime(slice.createdAt)}</span>
+        </div>
       )}
     </div>
   );
